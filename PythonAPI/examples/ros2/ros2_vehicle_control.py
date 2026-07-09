@@ -223,3 +223,5 @@ Note: Make sure CARLA UE5 is running and has registered a vehicle with the speci
 
 if __name__ == '__main__':
     main()
+
+    # python3 ros2_vehicle_control.py --role-name hero

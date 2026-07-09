@@ -185,6 +185,9 @@ public:
       const FString &Id,
       FActorDefinition &Definition);
 
+  static void MakeVehicleDataDefinition(
+      FActorDefinition &Definition);
+
   /// @}
   /// ==========================================================================
   /// @name Helpers to retrieve attribute values

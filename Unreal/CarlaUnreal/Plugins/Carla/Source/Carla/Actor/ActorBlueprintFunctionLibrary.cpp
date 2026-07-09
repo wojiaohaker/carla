@@ -1650,6 +1650,29 @@ void UActorBlueprintFunctionLibrary::MakeObstacleDetectorDefinitions(
                                 onlydynamics,
                                 debuglinetrace});
 }
+
+void UActorBlueprintFunctionLibrary::MakeVehicleDataDefinition(
+    FActorDefinition &Definition)
+{
+  Definition = MakeGenericSensorDefinition(TEXT("other"), TEXT("vehicle_data"));
+  AddVariationsForSensor(Definition);
+
+  // Detection radius (metres) for obstacle sphere trace.
+  FActorVariation DetectionRadius;
+  DetectionRadius.Id = TEXT("detection_radius");
+  DetectionRadius.Type = EActorAttributeType::Float;
+  DetectionRadius.RecommendedValues = {TEXT("50.0")};
+  DetectionRadius.bRestrictToRecommended = false;
+
+  // Maximum number of obstacles per tick.
+  FActorVariation MaxObstacles;
+  MaxObstacles.Id = TEXT("max_obstacles");
+  MaxObstacles.Type = EActorAttributeType::Int;
+  MaxObstacles.RecommendedValues = {TEXT("20")};
+  MaxObstacles.bRestrictToRecommended = false;
+
+  Definition.Variations.Append({DetectionRadius, MaxObstacles});
+}
 /// ============================================================================
 /// -- Helpers to retrieve attribute values ------------------------------------
 /// ============================================================================

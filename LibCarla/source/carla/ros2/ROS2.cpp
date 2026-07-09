@@ -33,6 +33,7 @@
 #include "publishers/CarlaGNSSPublisher.h"
 #include "publishers/CarlaTransformPublisher.h"
 #include "publishers/CarlaCollisionPublisher.h"
+#include "publishers/CarlaVehicleDataPublishers.h"
 #include "publishers/BasicPublisher.h"
 
 #include "subscribers/AckermannControlSubscriber.h"
@@ -84,7 +85,8 @@ enum ESensors {
   SemanticSegmentationCamera_WideAngleLens,
   CameraGBufferUint8,
   CameraGBufferFloat,
-  HSSLidar
+  HSSLidar,
+  VehicleDataSensor
 };
 
 void ROS2::Enable(bool enable) {
@@ -156,6 +158,7 @@ void ROS2::UnregisterSensor(void *actor) {
   _transforms.erase(actor);
   _actor_parents.erase(actor);
   _registrations.erase(actor);
+  _vehicle_data_publishers.erase(actor);
 }
 
 void ROS2::RegisterVehicle(
@@ -709,6 +712,70 @@ void ROS2::ProcessDataFromCollisionSensor(
   }
 }
 
+void ROS2::ProcessDataFromVehicleData(
+    uint64_t /*sensor_type*/,
+    carla::streaming::detail::stream_id_type /*stream_id*/,
+    const carla::geom::Transform /*sensor_transform*/,
+    // InsData fields
+    double longitude, double latitude, float altitude,
+    float yaw, float pitch, float roll,
+    float vx, float vy, float vt, float psd,
+    float r, float p, float q,
+    uint8_t gps_fix_state, uint8_t satellite_num, uint8_t gps_id,
+    uint8_t nav_state, uint16_t nav_fault_code,
+    bool is_valid, double timestamp,
+    // VehicleState fields
+    uint8_t work_state, uint8_t work_mode, uint8_t control_model,
+    uint8_t battery_capacity, uint16_t voltage, uint16_t current,
+    float speed, float angle, float brake, uint16_t fault_code,
+    // ObstacleList fields
+    const std::vector<ObstacleItemData>& obstacles,
+    void *actor) {
+  // Lazy-create the 3 publishers for this actor
+  auto it = _vehicle_data_publishers.find(actor);
+  if (it == _vehicle_data_publishers.end()) {
+    const std::string base_topic_name = BuildBaseTopicName(actor);
+    const std::string frame_id = LookupFrameId(actor);
+    VehicleDataPublishers vdp;
+    vdp.ins = std::make_shared<CarlaInsDataPublisher>(base_topic_name + "/INS", frame_id);
+    vdp.vehicle_state = std::make_shared<CarlaVehicleStatePublisher>(base_topic_name + "/VEHICLE_STATE", frame_id);
+    vdp.obstacle_list = std::make_shared<CarlaObstacleListPublisher>(base_topic_name + "/OBSTACLE_LIST", frame_id);
+    _vehicle_data_publishers.insert({actor, vdp});
+    it = _vehicle_data_publishers.find(actor);
+  }
+  auto& vdp = it->second;
+
+  // Publish INS data
+  if (vdp.ins) {
+    vdp.ins->Write(
+        _seconds, _nanoseconds,
+        longitude, latitude, altitude,
+        yaw, pitch, roll,
+        vx, vy, vt, psd,
+        r, p, q,
+        gps_fix_state, satellite_num, gps_id,
+        nav_state, nav_fault_code,
+        is_valid, timestamp);
+    vdp.ins->Publish();
+  }
+
+  // Publish VehicleState data
+  if (vdp.vehicle_state) {
+    vdp.vehicle_state->Write(
+        _seconds, _nanoseconds,
+        work_state, work_mode, control_model,
+        battery_capacity, voltage, current,
+        speed, angle, brake, fault_code);
+    vdp.vehicle_state->Publish();
+  }
+
+  // Publish ObstacleList data
+  if (vdp.obstacle_list) {
+    vdp.obstacle_list->Write(_seconds, _nanoseconds, obstacles);
+    vdp.obstacle_list->Publish();
+  }
+}
+
 void ROS2::Shutdown() {
   for (auto &element : _publishers) {
     element.second.reset();
@@ -726,6 +793,7 @@ void ROS2::Shutdown() {
   _actor_callbacks.clear();
   _registrations.clear();
   _actor_parents.clear();
+  _vehicle_data_publishers.clear();
   _clock_publisher.reset();
   _enabled = false;
 #if defined(WITH_ROS2_DEMO)

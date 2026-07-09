@@ -12,11 +12,14 @@
 #include "carla/ros2/ROS2CallbackData.h"
 #include "carla/streaming/detail/Types.h"
 
+#include "carla/ros2/types/ObstacleItemData.h"
+
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <array>
 
 // forward declarations
 class AActor;
@@ -43,6 +46,9 @@ class BaseSubscriber;
 class CarlaCameraPublisher;
 class CarlaClockPublisher;
 class CarlaTransformPublisher;
+class CarlaInsDataPublisher;
+class CarlaVehicleStatePublisher;
+class CarlaObstacleListPublisher;
 class BasicSubscriber;
 class BasicPublisher;
 
@@ -162,6 +168,26 @@ public:
       carla::geom::Vector3D impulse,
       void *actor);
 
+  void ProcessDataFromVehicleData(
+      uint64_t sensor_type,
+      carla::streaming::detail::stream_id_type stream_id,
+      const carla::geom::Transform sensor_transform,
+      // InsData fields
+      double longitude, double latitude, float altitude,
+      float yaw, float pitch, float roll,
+      float vx, float vy, float vt, float psd,
+      float r, float p, float q,
+      uint8_t gps_fix_state, uint8_t satellite_num, uint8_t gps_id,
+      uint8_t nav_state, uint16_t nav_fault_code,
+      bool is_valid, double timestamp,
+      // VehicleState fields
+      uint8_t work_state, uint8_t work_mode, uint8_t control_model,
+      uint8_t battery_capacity, uint16_t voltage, uint16_t current,
+      float speed, float angle, float brake, uint16_t fault_code,
+      // ObstacleList fields
+      const std::vector<ObstacleItemData>& obstacles,
+      void *actor = nullptr);
+
 private:
   struct ActorRegistration {
     std::string ros_name;
@@ -220,6 +246,14 @@ private:
   std::unordered_set<carla::streaming::detail::stream_id_type> _publish_stream;
   std::unordered_map<void *, ActorCallback> _actor_callbacks;
   std::unordered_multimap<void *, std::shared_ptr<BaseSubscriber>> _subscribers;
+
+  // VehicleData sensor: 3 publishers per actor (INS, VehicleState, ObstacleList)
+  struct VehicleDataPublishers {
+    std::shared_ptr<CarlaInsDataPublisher> ins;
+    std::shared_ptr<CarlaVehicleStatePublisher> vehicle_state;
+    std::shared_ptr<CarlaObstacleListPublisher> obstacle_list;
+  };
+  std::unordered_map<void *, VehicleDataPublishers> _vehicle_data_publishers;
 #if defined(WITH_ROS2_DEMO)
   std::shared_ptr<BasicSubscriber> _basic_subscriber;
   std::shared_ptr<BasicPublisher> _basic_publisher;

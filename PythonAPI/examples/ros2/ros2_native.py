@@ -58,7 +58,10 @@ def _setup_sensors(world, vehicle, sensors_config):
             )
         )
 
+        # Enable ROS2 publishing for this sensor
         sensors[-1].enable_for_ros()
+        logging.info("Sensor '{}' spawned and ROS2 enabled (type: {})".format(
+            sensor.get("id"), sensor.get("type")))
 
     return sensors
 
@@ -116,12 +119,23 @@ def main(args):
         vehicle.set_autopilot(True, args.tm_port)
 
         logging.info("Running...")
+        logging.info("Press Ctrl+C to stop.")
+        logging.info("ROS2 topics should be available at:")
+        logging.info("  - rt/carla/<vehicle_role>/INS")
+        logging.info("  - rt/carla/<vehicle_role>/VEHICLE_STATE")
+        logging.info("  - rt/carla/<vehicle_role>/OBSTACLE_LIST")
+        logging.info("Use 'ros2 topic list' to verify.")
 
+        tick_count = 0
         while True:
             if synchronous_master:
                 world.tick()
             else:
                 world.wait_for_tick()
+            
+            tick_count += 1
+            if tick_count % 100 == 0:
+                logging.debug("Tick count: {}".format(tick_count))
 
     except KeyboardInterrupt:
         print('\nCancelled by user. Bye!')
@@ -164,3 +178,6 @@ if __name__ == '__main__':
     logging.info('Listening to server %s:%s', args.host, args.port)
 
     main(args)
+
+    # python3 ros2_native.py -f stack.json                          默认传感器
+    # python3 ros2_native.py -f stack_vehicle_data.json             新增车辆数据传感器

@@ -26,7 +26,7 @@ void ActorROS2Handler::operator()(carla::ros2::VehicleControl &Source)
   NewControl.bManualGearShift = Source.manual_gear_shift;
   NewControl.Gear = Source.gear;
 
-  Vehicle->ApplyVehicleControl(NewControl, EVehicleInputPriority::User);
+  Vehicle->ApplyVehicleControl(NewControl, EVehicleInputPriority::Highest);
 }
 
 void ActorROS2Handler::operator()(carla::ros2::AckermannControl &Source)

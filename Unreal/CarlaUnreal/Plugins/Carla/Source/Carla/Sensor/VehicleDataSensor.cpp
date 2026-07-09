@@ -1,0 +1,412 @@
+// Copyright (c) 2026 Computer Vision Center (CVC) at the Universitat Autonoma
+// de Barcelona (UAB).
+//
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT>.
+
+#include "Carla/Sensor/VehicleDataSensor.h"
+#include "Carla.h"
+#include "Carla/Actor/ActorBlueprintFunctionLibrary.h"
+#include "Carla/Actor/ActorRegistry.h"
+#include "Carla/Game/CarlaEpisode.h"
+#include "Carla/Game/CarlaStatics.h"
+#include "Carla/MapGen/LargeMapManager.h"
+#include "Carla/Vehicle/CarlaWheeledVehicle.h"
+
+#include <util/disable-ue4-macros.h>
+#include "carla/geom/Math.h"
+#include "carla/geom/Vector3D.h"
+#include "carla/ros2/ROS2.h"
+#include <util/enable-ue4-macros.h>
+
+#include "ChaosWheeledVehicleMovementComponent.h"
+#include "Engine/CollisionProfile.h"
+#include "GameFramework/Pawn.h"
+
+#include <cmath>
+
+// ---------------------------------------------------------------------------
+// Construction / definition
+// ---------------------------------------------------------------------------
+
+AVehicleDataSensor::AVehicleDataSensor(const FObjectInitializer &ObjectInitializer)
+  : Super(ObjectInitializer)
+{
+  PrimaryActorTick.bCanEverTick = true;
+  PrimaryActorTick.TickGroup = TG_PostPhysics;
+}
+
+FActorDefinition AVehicleDataSensor::GetSensorDefinition()
+{
+  FActorDefinition Definition;
+  UActorBlueprintFunctionLibrary::MakeVehicleDataDefinition(Definition);
+  return Definition;
+}
+
+void AVehicleDataSensor::Set(const FActorDescription &ActorDescription)
+{
+  Super::Set(ActorDescription);
+  DetectionRadius = UActorBlueprintFunctionLibrary::RetrieveActorAttributeToFloat(
+      "detection_radius", ActorDescription.Variations, DetectionRadius);
+  MaxObstacles = UActorBlueprintFunctionLibrary::RetrieveActorAttributeToInt(
+      "max_obstacles", ActorDescription.Variations, MaxObstacles);
+}
+
+void AVehicleDataSensor::SetOwner(AActor *OwningActor)
+{
+  Super::SetOwner(OwningActor);
+}
+
+void AVehicleDataSensor::BeginPlay()
+{
+  Super::BeginPlay();
+
+  const UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(GetWorld());
+  if (Episode)
+  {
+    CurrentGeoProjection = Episode->GetGeoProjection();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PostPhysTick – main data-collection entry point
+// ---------------------------------------------------------------------------
+
+void AVehicleDataSensor::PostPhysTick(
+    UWorld *World, ELevelTick TickType, float DeltaSeconds)
+{
+  TRACE_CPUPROFILER_EVENT_SCOPE(AVehicleDataSensor::PostPhysTick);
+
+#if defined(WITH_ROS2)
+  auto ROS2 = carla::ros2::ROS2::GetInstance();
+  if (!ROS2->IsEnabled())
+  {
+    return;
+  }
+
+  // --- INS data ---
+  double longitude = 0.0, latitude = 0.0;
+  float altitude = 0.0f;
+  float yaw = 0.0f, pitch = 0.0f, roll = 0.0f;
+  float vx = 0.0f, vy = 0.0f, vt = 0.0f, psd = 0.0f;
+  float r = 0.0f, p = 0.0f, q = 0.0f;
+  uint8_t gps_fix_state = 0, satellite_num = 0, gps_id = 0, nav_state = 0;
+  uint16_t nav_fault_code = 0;
+  bool is_valid = false;
+  double timestamp = 0.0;
+  CollectInsData(longitude, latitude, altitude,
+                 yaw, pitch, roll,
+                 vx, vy, vt, psd,
+                 r, p, q,
+                 gps_fix_state, satellite_num, gps_id,
+                 nav_state, nav_fault_code, is_valid, timestamp);
+
+  // --- VehicleState data ---
+  uint8_t work_state = 0, work_mode = 0, control_model = 0;
+  uint8_t battery_capacity = 100;
+  uint16_t voltage = 0, current = 0;
+  float speed = 0.0f, angle = 0.0f, brake = 0.0f;
+  uint16_t fault_code = 0;
+  CollectVehicleStateData(work_state, work_mode, control_model,
+                          battery_capacity, voltage, current,
+                          speed, angle, brake, fault_code);
+
+  // --- ObstacleList data ---
+  std::vector<carla::ros2::ObstacleItemData> obstacles;
+  CollectObstacleListData(obstacles);
+
+  // --- Publish ---
+  auto StreamId = carla::streaming::detail::token_type(GetToken()).get_stream_id();
+  auto DataStream = GetDataStream(*this);
+
+  AActor *ParentActor = GetAttachParentActor();
+  carla::geom::Transform SensorTransform;
+  if (ParentActor)
+  {
+    FTransform LocalTransform = GetActorTransform().GetRelativeTransform(
+        ParentActor->GetActorTransform());
+    SensorTransform = LocalTransform;
+  }
+  else
+  {
+    SensorTransform = DataStream.GetSensorTransform();
+  }
+
+  ROS2->ProcessDataFromVehicleData(
+      DataStream.GetSensorType(), StreamId, SensorTransform,
+      // INS
+      longitude, latitude, altitude,
+      yaw, pitch, roll,
+      vx, vy, vt, psd,
+      r, p, q,
+      gps_fix_state, satellite_num, gps_id,
+      nav_state, nav_fault_code,
+      is_valid, timestamp,
+      // VehicleState
+      work_state, work_mode, control_model,
+      battery_capacity, voltage, current,
+      speed, angle, brake, fault_code,
+      // ObstacleList
+      obstacles,
+      this);
+#endif  // WITH_ROS2
+}
+
+// ---------------------------------------------------------------------------
+// INS data collection
+// ---------------------------------------------------------------------------
+
+void AVehicleDataSensor::CollectInsData(
+    double &out_longitude, double &out_latitude, float &out_altitude,
+    float &out_yaw, float &out_pitch, float &out_roll,
+    float &out_vx, float &out_vy, float &out_vt, float &out_psd,
+    float &out_r, float &out_p, float &out_q,
+    uint8_t &out_gps_fix_state, uint8_t &out_satellite_num,
+    uint8_t &out_gps_id, uint8_t &out_nav_state,
+    uint16_t &out_nav_fault_code, bool &out_is_valid,
+    double &out_timestamp)
+{
+  // --- Position (convert UE location -> geo) ---
+  FVector ActorLocation = GetActorLocation();
+  ALargeMapManager *LargeMap = UCarlaStatics::GetLargeMapManager(GetWorld());
+  if (LargeMap)
+  {
+    ActorLocation = LargeMap->LocalToGlobalLocation(ActorLocation);
+  }
+  carla::geom::Location Location = ActorLocation;
+  carla::geom::GeoLocation GeoLoc = CurrentGeoProjection.TransformToGeoLocation(Location);
+
+  out_longitude = GeoLoc.longitude;
+  out_latitude = GeoLoc.latitude;
+  out_altitude = static_cast<float>(GeoLoc.altitude);
+
+  // --- Orientation (degrees -> radians) ---
+  const FRotator Rot = GetActorRotation();
+  constexpr float DEG_TO_RAD = PI / 180.0f;
+  out_yaw   = Rot.Yaw   * DEG_TO_RAD;
+  out_pitch  = Rot.Pitch  * DEG_TO_RAD;
+  out_roll   = Rot.Roll   * DEG_TO_RAD;
+
+  // --- Velocity in body frame ---
+  AActor *OwnerActor = GetOwner();
+  if (OwnerActor)
+  {
+    // UE velocity is in cm/s in world frame; convert to m/s in body frame.
+    const FVector WorldVelocityCmS = OwnerActor->GetVelocity();
+    const FVector WorldVelocityMs = WorldVelocityCmS * 0.01;  // cm/s -> m/s
+
+    const FQuat ActorQuat = GetActorQuat();
+    const FVector BodyVelocity = ActorQuat.UnrotateVector(WorldVelocityMs);
+
+    out_vx = static_cast<float>(BodyVelocity.X);  // forward
+    out_vy = static_cast<float>(BodyVelocity.Y);  // right
+    out_vt = static_cast<float>(WorldVelocityMs.Size());  // total speed
+  }
+
+  // --- PSD (position standard deviation) – default 0, no noise model ---
+  out_psd = 0.0f;
+
+  // --- Angular velocity (rad/s) in body frame ---
+  const auto *RootComp = Cast<UPrimitiveComponent>(GetRootComponent());
+  if (RootComp)
+  {
+    const FQuat ActorGlobalRotation = RootComp->GetComponentTransform().GetRotation();
+    const FVector GlobalAngularVelocity = RootComp->GetPhysicsAngularVelocityInRadians();
+    const FVector LocalAngularVelocity = ActorGlobalRotation.UnrotateVector(GlobalAngularVelocity);
+    out_r = static_cast<float>(LocalAngularVelocity.X);
+    out_p = static_cast<float>(LocalAngularVelocity.Y);
+    out_q = static_cast<float>(LocalAngularVelocity.Z);
+  }
+  else
+  {
+    out_r = out_p = out_q = 0.0f;
+  }
+
+  // --- GPS status defaults (simulated = perfect fix) ---
+  out_gps_fix_state = 1;   // 1 = fix
+  out_satellite_num = 12;
+  out_gps_id = 0;
+  out_nav_state = 0;
+  out_nav_fault_code = 0;
+  out_is_valid = true;
+
+  // --- Timestamp (seconds since simulation start) ---
+  const UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(GetWorld());
+  if (Episode)
+  {
+    out_timestamp = Episode->GetElapsedGameTime();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// VehicleState data collection
+// ---------------------------------------------------------------------------
+
+void AVehicleDataSensor::CollectVehicleStateData(
+    uint8_t &out_work_state, uint8_t &out_work_mode,
+    uint8_t &out_control_model, uint8_t &out_battery_capacity,
+    uint16_t &out_voltage, uint16_t &out_current,
+    float &out_speed, float &out_angle, float &out_brake,
+    uint16_t &out_fault_code)
+{
+  // Defaults for fields not directly available from the simulation.
+  out_work_state = 1;        // 1 = running
+  out_work_mode = 0;         // 0 = auto
+  out_control_model = 0;     // 0 = default
+  out_battery_capacity = 100;
+  out_voltage = 0;
+  out_current = 0;
+  out_fault_code = 0;
+
+  AActor *OwnerActor = GetOwner();
+  if (!OwnerActor)
+  {
+    out_speed = out_angle = out_brake = 0.0f;
+    return;
+  }
+
+  // Speed in m/s (convention: message stores m/s * 10).
+  auto *CarlaVehicle = Cast<ACarlaWheeledVehicle>(OwnerActor);
+  if (CarlaVehicle)
+  {
+    const float ForwardSpeedMs = CarlaVehicle->GetVehicleForwardSpeed() * 0.01f;  // cm/s -> m/s
+    out_speed = ForwardSpeedMs * 10.0f;  // scale by 10 per message convention
+  }
+  else
+  {
+    const FVector VelMs = OwnerActor->GetVelocity() * 0.01f;
+    out_speed = static_cast<float>(VelMs.Size()) * 10.0f;
+  }
+
+  // Steering angle and brake from the Chaos movement component.
+  auto *MovementComp = Cast<UChaosWheeledVehicleMovementComponent>(
+      OwnerActor->FindComponentByClass<UChaosWheeledVehicleMovementComponent>());
+  if (MovementComp)
+  {
+    // SteeringInput is in [-1, 1]; convert to approximate degrees.
+    out_angle = MovementComp->GetSteeringInput() * 30.0f;  // ~max 30 deg
+    out_brake = MovementComp->GetBrakeInput();
+  }
+  else
+  {
+    out_angle = 0.0f;
+    out_brake = 0.0f;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ObstacleList data collection
+// ---------------------------------------------------------------------------
+
+void AVehicleDataSensor::CollectObstacleListData(
+    std::vector<carla::ros2::ObstacleItemData> &out_obstacles)
+{
+  out_obstacles.clear();
+
+  UWorld *CurrentWorld = GetWorld();
+  if (!CurrentWorld)
+  {
+    return;
+  }
+
+  AActor *OwnerActor = GetOwner();
+  const FVector Origin = GetActorLocation();
+  const float RadiusCm = DetectionRadius * 100.0f;  // metres -> cm
+
+  // Sphere trace for all actors within DetectionRadius.
+  TArray<FHitResult> HitResults;
+  FCollisionQueryParams TraceParams(FName(TEXT("VehicleDataSensor Trace")), true, this);
+  TraceParams.bTraceComplex = true;
+  TraceParams.bIgnoreTouches = true;
+  TraceParams.bReturnPhysicalMaterial = false;
+  if (this)
+  {
+    TraceParams.AddIgnoredActor(this);
+  }
+  if (OwnerActor)
+  {
+    TraceParams.AddIgnoredActor(OwnerActor);
+  }
+
+  const bool bHit = CurrentWorld->SweepMultiByChannel(
+      HitResults,
+      Origin, Origin,  // sphere centred on sensor
+      FQuat::Identity,
+      ECC_WorldStatic,
+      FCollisionShape::MakeSphere(RadiusCm),
+      TraceParams);
+
+  if (!bHit)
+  {
+    return;
+  }
+
+  // Vehicle transform for world -> body conversion.
+  const FQuat VehicleQuat = GetActorQuat();
+  const FVector VehiclePos = Origin;
+
+  int32 ObstacleId = 0;
+  const int32 Limit = FMath::Min(HitResults.Num(), MaxObstacles);
+  for (int32 i = 0; i < Limit; ++i)
+  {
+    const FHitResult &Hit = HitResults[i];
+    AActor *HitActor = Hit.GetActor();
+    if (!HitActor || HitActor == this || HitActor == OwnerActor)
+    {
+      continue;
+    }
+
+    // World-space position relative to vehicle, converted to body frame (cm -> m).
+    const FVector HitLocation = Hit.ImpactPoint;
+    const FVector RelativeWorld = HitLocation - VehiclePos;
+    const FVector RelativeBody = VehicleQuat.UnrotateVector(RelativeWorld) * 0.01f;
+
+    // Bounding box for size estimation.
+    FVector Origin2, Extent;
+    HitActor->GetActorBounds(false, Origin2, Extent);
+    const FVector ExtentM = Extent * 0.01f * 2.0f;  // full size in metres
+
+    // Heading of the obstacle relative to vehicle forward (x-axis).
+    const float Course = FMath::Atan2(RelativeBody.Y, RelativeBody.X);
+
+    // Approximate speed from the obstacle's velocity.
+    const FVector ObsVelMs = HitActor->GetVelocity() * 0.01f;
+    const float ObsSpeed = static_cast<float>(ObsVelMs.Size());
+
+    carla::ros2::ObstacleItemData item;
+    item.id = ObstacleId++;
+    item.type = 0;  // generic obstacle
+    item.x = static_cast<double>(RelativeBody.X);
+    item.y = static_cast<double>(RelativeBody.Y);
+    item.length = static_cast<double>(ExtentM.X);
+    item.width  = static_cast<double>(ExtentM.Y);
+    item.height = static_cast<double>(ExtentM.Z);
+    item.course = static_cast<double>(Course);
+    item.speed  = static_cast<double>(ObsSpeed);
+    out_obstacles.push_back(item);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Accessors
+// ---------------------------------------------------------------------------
+
+void AVehicleDataSensor::SetDetectionRadius(float Value)
+{
+  DetectionRadius = FMath::Max(0.0f, Value);
+}
+
+float AVehicleDataSensor::GetDetectionRadius() const
+{
+  return DetectionRadius;
+}
+
+void AVehicleDataSensor::SetMaxObstacles(int32 Value)
+{
+  MaxObstacles = FMath::Max(0, Value);
+}
+
+int32 AVehicleDataSensor::GetMaxObstacles() const
+{
+  return MaxObstacles;
+}

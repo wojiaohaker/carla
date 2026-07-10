@@ -57,6 +57,15 @@
                 "noise_gyro_bias_y": 0.0,
                 "noise_gyro_bias_z": 0.0
             }
+        },
+        {
+            "type": "sensor.other.vehicle_data",
+            "id": "vehicle_data",
+            "spawn_point": {"x": 0.0, "y": 0.0, "z": 2.0, "roll": 0.0, "pitch": 0.0, "yaw": 0.0},
+            "attributes": {
+                "detection_radius": "5.0",
+                "max_obstacles": "2"
+            }
         }
     ]
 }

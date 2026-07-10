@@ -84,4 +84,8 @@ private:
 
   /// Maximum obstacles per tick.
   int32 MaxObstacles = 20;
+
+  /// Tick accumulator for rate control (50 Hz = 0.02s per tick).
+  float TickAccumulator = 0.0f;
+  static constexpr float PublishPeriod = 0.02f;  // 50 Hz
 };

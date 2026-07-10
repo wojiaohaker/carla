@@ -76,6 +76,10 @@
 		{
 			"Name": "PerformanceMonitor",
 			"Enabled": true
+		},
+		{
+			"Name": "GeoReferencing",
+			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [

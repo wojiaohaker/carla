@@ -84,6 +84,14 @@ void AVehicleDataSensor::PostPhysTick(
     return;
   }
 
+  // Rate control: accumulate delta time and only publish at 50 Hz
+  TickAccumulator += DeltaSeconds;
+  if (TickAccumulator < PublishPeriod)
+  {
+    return;  // Not enough time elapsed, skip this tick
+  }
+  TickAccumulator -= PublishPeriod;  // Subtract period (not reset to 0) to avoid drift
+
   // --- INS data ---
   double longitude = 0.0, latitude = 0.0;
   float altitude = 0.0f;
@@ -181,11 +189,16 @@ void AVehicleDataSensor::CollectInsData(
   out_altitude = static_cast<float>(GeoLoc.altitude);
 
   // --- Orientation (degrees -> radians) ---
-  const FRotator Rot = GetActorRotation();
+  /*const FRotator Rot = GetActorRotation();
   constexpr float DEG_TO_RAD = PI / 180.0f;
   out_yaw   = Rot.Yaw   * DEG_TO_RAD;
   out_pitch  = Rot.Pitch  * DEG_TO_RAD;
-  out_roll   = Rot.Roll   * DEG_TO_RAD;
+  out_roll   = Rot.Roll   * DEG_TO_RAD;*/
+  
+  const FRotator Rot = GetActorRotation();
+  out_yaw   = Rot.Yaw;
+  out_pitch  = Rot.Pitch;
+  out_roll   = Rot.Roll;
 
   // --- Velocity in body frame ---
   AActor *OwnerActor = GetOwner();

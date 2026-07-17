@@ -322,82 +322,152 @@ void AVehicleDataSensor::CollectObstacleListData(
     return;
   }
 
-  AActor *OwnerActor = GetOwner();
-  const FVector Origin = GetActorLocation();
-  const float RadiusCm = DetectionRadius * 100.0f;  // metres -> cm
-
-  // Sphere trace for all actors within DetectionRadius.
-  TArray<FHitResult> HitResults;
-  FCollisionQueryParams TraceParams(FName(TEXT("VehicleDataSensor Trace")), true, this);
-  TraceParams.bTraceComplex = true;
-  TraceParams.bIgnoreTouches = true;
-  TraceParams.bReturnPhysicalMaterial = false;
-  if (this)
-  {
-    TraceParams.AddIgnoredActor(this);
-  }
-  if (OwnerActor)
-  {
-    TraceParams.AddIgnoredActor(OwnerActor);
-  }
-
-  const bool bHit = CurrentWorld->SweepMultiByChannel(
-      HitResults,
-      Origin, Origin,  // sphere centred on sensor
-      FQuat::Identity,
-      ECC_WorldStatic,
-      FCollisionShape::MakeSphere(RadiusCm),
-      TraceParams);
-
-  if (!bHit)
+  // Get the ActorRegistry — only contains actors spawned via CARLA API
+  // (vehicles, walkers, props). Static map objects are NOT in the registry.
+  const UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(CurrentWorld);
+  if (!Episode)
   {
     return;
   }
+  const FActorRegistry &Registry = Episode->GetActorRegistry();
+  if (Registry.IsEmpty())
+  {
+    UE_LOG(LogTemp, Warning, TEXT("CollectObstacleListData: ActorRegistry is empty"));
+    return;
+  }
 
-  // Vehicle transform for world -> body conversion.
-  const FQuat VehicleQuat = GetActorQuat();
-  const FVector VehiclePos = Origin;
+  UE_LOG(LogTemp, Log, TEXT("CollectObstacleListData: Registry has %d actors"), Registry.Num());
+
+  // Vehicle pose for world -> body conversion.
+  const FVector VehiclePos = GetActorLocation();
+  const FQuat  VehicleQuat = GetActorQuat();
+  const float  RadiusCm    = DetectionRadius * 100.0f;  // metres -> cm
+  const float  RadiusCmSq  = RadiusCm * RadiusCm;
+
+  AActor *OwnerActor = GetOwner();
 
   int32 ObstacleId = 0;
-  const int32 Limit = FMath::Min(HitResults.Num(), MaxObstacles);
-  for (int32 i = 0; i < Limit; ++i)
+  for (const auto &Pair : Registry)
   {
-    const FHitResult &Hit = HitResults[i];
-    AActor *HitActor = Hit.GetActor();
-    if (!HitActor || HitActor == this || HitActor == OwnerActor)
+    FCarlaActor *CarlaActor = Pair.Value.Get();
+    if (!CarlaActor || !CarlaActor->IsAlive())
     {
       continue;
     }
 
-    // World-space position relative to vehicle, converted to body frame (cm -> m).
-    const FVector HitLocation = Hit.ImpactPoint;
-    const FVector RelativeWorld = HitLocation - VehiclePos;
-    const FVector RelativeBody = VehicleQuat.UnrotateVector(RelativeWorld) * 0.01f;
+    const auto ActorType = CarlaActor->GetActorType();
+    const FActorInfo *ActorInfo = CarlaActor->GetActorInfo();
+    FString DescId = ActorInfo ? ActorInfo->Description.Id : TEXT("(null)");
+    FString RoleNameVal = TEXT("(none)");
+    if (ActorInfo)
+    {
+      const FActorAttribute *RN = ActorInfo->Description.Variations.Find("role_name");
+      if (RN) RoleNameVal = RN->Value;
+    }
+    AActor *Actor = CarlaActor->GetActor();
+    FVector ActorLoc = Actor ? Actor->GetActorLocation() : FVector::ZeroVector;
 
-    // Bounding box for size estimation.
-    FVector Origin2, Extent;
-    HitActor->GetActorBounds(false, Origin2, Extent);
-    const FVector ExtentM = Extent * 0.01f * 2.0f;  // full size in metres
+    UE_LOG(LogTemp, Log, TEXT("  [Registry] Id=%d, Type=%d, DescId=%s, role_name=%s, Loc=(%.0f,%.0f,%.0f)"),
+        Pair.Key, (int32)ActorType, *DescId, *RoleNameVal, ActorLoc.X, ActorLoc.Y, ActorLoc.Z);
 
-    // Heading of the obstacle relative to vehicle forward (x-axis).
-    const float Course = FMath::Atan2(RelativeBody.Y, RelativeBody.X);
+    if (ObstacleId >= MaxObstacles)
+    {
+      UE_LOG(LogTemp, Log, TEXT("    -> skipped: MaxObstacles reached (%d)"), MaxObstacles);
+      break;
+    }
 
-    // Approximate speed from the obstacle's velocity.
-    const FVector ObsVelMs = HitActor->GetVelocity() * 0.01f;
-    const float ObsSpeed = static_cast<float>(ObsVelMs.Size());
+    // Only process Vehicle, Walker, Other (props). Skip sensors/traffic.
+    if (ActorType != FCarlaActor::ActorType::Vehicle &&
+        ActorType != FCarlaActor::ActorType::Walker &&
+        ActorType != FCarlaActor::ActorType::Other)
+    {
+      UE_LOG(LogTemp, Log, TEXT("    -> skipped: wrong ActorType"));
+      continue;
+    }
+
+    // Check role_name.
+    if (!ActorInfo)
+    {
+      UE_LOG(LogTemp, Log, TEXT("    -> skipped: no ActorInfo"));
+      continue;
+    }
+    const FActorAttribute *RoleName = ActorInfo->Description.Variations.Find("role_name");
+    if (!RoleName || RoleName->Value != TEXT("obstacle"))
+    {
+      UE_LOG(LogTemp, Log, TEXT("    -> skipped: role_name is not 'obstacle'"));
+      continue;
+    }
+
+    if (!Actor || Actor == this || Actor == OwnerActor)
+    {
+      UE_LOG(LogTemp, Log, TEXT("    -> skipped: self or owner"));
+      continue;
+    }
+
+    // Real-time actor location.
+    const FVector ObjLoc = Actor->GetActorLocation();
+
+    // Distance filter (cm).
+    const FVector Delta = ObjLoc - VehiclePos;
+    if (Delta.SizeSquared() > RadiusCmSq)
+    {
+      UE_LOG(LogTemp, Log, TEXT("    -> skipped: out of range (dist=%.0f cm, radius=%.0f cm)"),
+          Delta.Size(), RadiusCm);
+      continue;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("    -> OBSTACLE FOUND! dist=%.0f cm"), Delta.Size());
+
+    // Convert to vehicle body frame (cm -> m).
+    // UE body: X=forward, Y=right, Z=down.
+    const FVector RelativeBody = VehicleQuat.UnrotateVector(Delta) * 0.01f;
+
+    // Bounding box from ActorInfo (cm -> m, full extent).
+    FVector BBExtent = ActorInfo->BoundingBox.Extent * 0.01f * 2.0f;
+
+    // Map to algorithm convention:
+    //   x = lateral offset (right positive) = Y_body
+    //   y = forward distance (front positive) = X_body
+    const double MsgX = static_cast<double>( RelativeBody.Y);
+    const double MsgY = static_cast<double>( RelativeBody.X);
+
+    // Course in degrees: angle from forward axis (y-axis in algorithm convention).
+    // atan2(lateral, forward) = atan2(x, y)
+    const double CourseDeg = FMath::RadiansToDegrees(
+        FMath::Atan2(MsgX, MsgY));
+
+    // Determine obstacle type and speed from CarlaActor type.
+    uint8_t ObsType = 3;  // default: static obstacle (prop)
+    double ObsSpeed = 0.0;
+    switch (ActorType)
+    {
+      case FCarlaActor::ActorType::Vehicle:
+        ObsType = 1;  // vehicle
+        ObsSpeed = CarlaActor->GetActorVelocity().Size() * 0.01f;  // cm/s -> m/s
+        break;
+      case FCarlaActor::ActorType::Walker:
+        ObsType = 2;  // pedestrian
+        ObsSpeed = CarlaActor->GetActorVelocity().Size() * 0.01f;  // cm/s -> m/s
+        break;
+      default:
+        ObsType = 3;  // static obstacle (prop)
+        break;
+    }
 
     carla::ros2::ObstacleItemData item;
-    item.id = ObstacleId++;
-    item.type = 0;  // generic obstacle
-    item.x = static_cast<double>(RelativeBody.X);
-    item.y = static_cast<double>(RelativeBody.Y);
-    item.length = static_cast<double>(ExtentM.X);
-    item.width  = static_cast<double>(ExtentM.Y);
-    item.height = static_cast<double>(ExtentM.Z);
-    item.course = static_cast<double>(Course);
-    item.speed  = static_cast<double>(ObsSpeed);
+    item.id     = ObstacleId++;
+    item.type   = ObsType;
+    item.x      = MsgX;
+    item.y      = MsgY;
+    item.length = static_cast<double>(BBExtent.X);
+    item.width  = static_cast<double>(BBExtent.Y);
+    item.height = static_cast<double>(BBExtent.Z);
+    item.course = CourseDeg;
+    item.speed  = ObsSpeed;
     out_obstacles.push_back(item);
   }
+
+  UE_LOG(LogTemp, Log, TEXT("CollectObstacleListData: collected %d obstacles"), ObstacleId);
 }
 
 // ---------------------------------------------------------------------------

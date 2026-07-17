@@ -39,7 +39,7 @@ public:
   virtual void PostPhysTick(
       UWorld *World, ELevelTick TickType, float DeltaSeconds) override;
 
-  /// Radius (metres) used for the obstacle sphere trace.
+  /// Radius (metres) for obstacle detection range.
   void SetDetectionRadius(float Value);
   float GetDetectionRadius() const;
 
@@ -72,7 +72,7 @@ private:
       float &out_speed, float &out_angle, float &out_brake,
       uint16_t &out_fault_code);
 
-  /// Collect obstacle list via sphere trace.
+  /// Collect obstacle list from actors spawned via CARLA API (ActorRegistry).
   void CollectObstacleListData(
       std::vector<carla::ros2::ObstacleItemData> &out_obstacles);
 
@@ -88,4 +88,5 @@ private:
   /// Tick accumulator for rate control (50 Hz = 0.02s per tick).
   float TickAccumulator = 0.0f;
   static constexpr float PublishPeriod = 0.02f;  // 50 Hz
+
 };

@@ -8,6 +8,22 @@
 
 #include "KismetProceduralMeshLibrary.h"
 #include "ProceduralMeshConversion.h"
+#include "UObject/SoftObjectPath.h"
+
+// MuJoCo (右手系, Z-up) → UE (左手系, Y-up) 坐标转换
+// X: 米→厘米, Y: 翻转并米→厘米, Z: 米→厘米
+static inline FVector MujocoToUE(mjtNum x, mjtNum y, mjtNum z)
+{
+	return FVector(x * 100.0f, -y * 100.0f, z * 100.0f);
+}
+
+// MuJoCo 四元数 [w,x,y,z] → UE 四元数 [x,y,z,w] + Y轴翻转修正
+static inline FQuat MujocoQuatToUE(const mjtNum q[4])
+{
+	// MuJoCo: [w, x, y, z], UE: [x, y, z, w]
+	// Y轴翻转 (右手→左手) 需要翻转 x 和 z 分量
+	return FQuat(-q[1], q[2], -q[3], q[0]);
+}
 
 FVector CalculateWorldPosition(const FVector &BaseLocation, const FQuat &BaseRotation, const FVector &RelativeLocation)
 {
@@ -33,7 +49,7 @@ ModelInfo ExtractModelInfo(const mjModel *m)
 		std::copy(m->body_pos + 3 * i, m->body_pos + 3 * (i + 1), bodyInfo.pos);
 		std::copy(m->body_quat + 4 * i, m->body_quat + 4 * (i + 1), bodyInfo.quat);
 		bodyInfo.parent_id = m->body_parentid[i];
-		bodyInfo.quat2 = FQuat(bodyInfo.quat[1], bodyInfo.quat[2], bodyInfo.quat[3], bodyInfo.quat[0]);
+		bodyInfo.quat2 = MujocoQuatToUE(bodyInfo.quat);
 		modelInfo.bodies.push_back(bodyInfo);
 	}
 
@@ -47,7 +63,7 @@ ModelInfo ExtractModelInfo(const mjModel *m)
 		std::copy(m->geom_size + 3 * i, m->geom_size + 3 * (i + 1), geomInfo.size);
 		std::copy(m->geom_pos + 3 * i, m->geom_pos + 3 * (i + 1), geomInfo.pos);
 		std::copy(m->geom_quat + 4 * i, m->geom_quat + 4 * (i + 1), geomInfo.quat);
-		geomInfo.quat2 = FQuat(geomInfo.quat[1], geomInfo.quat[2], geomInfo.quat[3], geomInfo.quat[0]);
+		geomInfo.quat2 = MujocoQuatToUE(geomInfo.quat);
 		// Check if this geom has material or texture information
 		if (m->geom_matid[i] >= 0)
 		{
@@ -136,7 +152,7 @@ void AMuJoCoSimulation::GenerateMeshes(ModelInfo &modelInfo)
 
 		BodyMap.Add(BodyId++, sceneComponent);
 		sceneComponent->RegisterComponent();
-		sceneComponent->SetRelativeLocation(FVector(bodyInfo.pos[0] * 100, bodyInfo.pos[1] * 100, bodyInfo.pos[2] * 100));
+		sceneComponent->SetRelativeLocation(MujocoToUE(bodyInfo.pos[0], bodyInfo.pos[1], bodyInfo.pos[2]));
 		sceneComponent->SetRelativeRotation(bodyInfo.quat2);
 		if (bodyInfo.parent_id == 0)
 			sceneComponent->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
@@ -155,7 +171,7 @@ void AMuJoCoSimulation::GenerateMeshes(ModelInfo &modelInfo)
 		UStaticMeshComponent *staticMeshComponent = NewObject<UStaticMeshComponent>(this);//, FName(*(FString(geomInfo.name.c_str()) + *FString::Printf(TEXT("_Geom%d"), BodyId))));
 		staticMeshComponent->RegisterComponent();
 		geomInfo.posAdjust[2] = geomInfo.size[2] * -50;
-		staticMeshComponent->SetRelativeLocation(FVector(geomInfo.pos[0] * 100, geomInfo.pos[1] * 100, geomInfo.pos[2] * 100)); //+geomInfo.posAdjust[2]
+		staticMeshComponent->SetRelativeLocation(MujocoToUE(geomInfo.pos[0], geomInfo.pos[1], geomInfo.pos[2])); //+geomInfo.posAdjust[2]
 		staticMeshComponent->SetRelativeRotation(geomInfo.quat2);
 		staticMeshComponent->AttachToComponent(this->BodyMap[geomInfo.body_id], FAttachmentTransformRules::KeepRelativeTransform);
 		;
@@ -211,7 +227,7 @@ void AMuJoCoSimulation::ExtractCurrentState(ModelInfo &info)
 		BodyInfo bodyInfo;
 		std::copy(mData->xpos + 3 * i, mData->xpos + 3 * (i + 1), info.bodies[i].pos);
 		std::copy(mData->xquat + 4 * i, mData->xquat + 4 * (i + 1), info.bodies[i].quat);
-		info.bodies[i].quat2 = FQuat(info.bodies[i].quat[1], info.bodies[i].quat[2], info.bodies[i].quat[3], info.bodies[i].quat[0]);
+		info.bodies[i].quat2 = MujocoQuatToUE(info.bodies[i].quat);
 	}
 
 	// Update geom states
@@ -223,7 +239,7 @@ void AMuJoCoSimulation::ExtractCurrentState(ModelInfo &info)
 		mjtNum quat[4];
 		mju_mat2Quat(quat, mat);
 
-		geomInfo.quat2 = FQuat(quat[1], quat[2], quat[3], quat[0]);
+		geomInfo.quat2 = MujocoQuatToUE(quat);
 	}
 }
 
@@ -280,7 +296,7 @@ void AMuJoCoSimulation::UpdateSimulationView(const ModelInfo &Info)
 		USceneComponent *sceneComponent = BodyMap[BodyId];
 		if (!sceneComponent)
 			continue;
-		FVector WorldLoc = CalculateWorldPosition(BaseLocation, BaseRotation, FVector(bodyInfo.pos[0] * 100, bodyInfo.pos[1] * 100, bodyInfo.pos[2] * 100));
+		FVector WorldLoc = CalculateWorldPosition(BaseLocation, BaseRotation, MujocoToUE(bodyInfo.pos[0], bodyInfo.pos[1], bodyInfo.pos[2]));
 		sceneComponent->SetWorldLocation(WorldLoc);
 		FQuat worldRot = CalculateWorldRotation(BaseRotation, bodyInfo.quat2);
 		sceneComponent->SetWorldRotation(bodyInfo.quat2 /*worldRot*/);
@@ -304,7 +320,7 @@ void AMuJoCoSimulation::UpdateSimulationView(const ModelInfo &Info)
 		//	staticMeshComponent->SetRelativeLocation(FVector(geomInfo.pos[0]*100, geomInfo.pos[1]*100, geomInfo.pos[2]*100));
 		//	staticMeshComponent->SetRelativeRotation(geomInfo.quat2);
 
-		FVector WorldLoc = CalculateWorldPosition(BaseLocation, BaseRotation, FVector(geomInfo.pos[0] * 100, geomInfo.pos[1] * 100, geomInfo.pos[2] * 100));
+		FVector WorldLoc = CalculateWorldPosition(BaseLocation, BaseRotation, MujocoToUE(geomInfo.pos[0], geomInfo.pos[1], geomInfo.pos[2]));
 		staticMeshComponent->SetWorldLocation(WorldLoc);
 		FQuat worldRot = CalculateWorldRotation(BaseRotation, geomInfo.quat2);
 		//	staticMeshComponent->SetWorldRotation(geomInfo.quat2/*worldRot*/);
@@ -520,6 +536,17 @@ void AMuJoCoSimulation::ConvertMuJoCoModelToProceduralMeshes(const mjModel *mjMo
 
 		ProcMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+		// 为 ProceduralMesh 设置基础材质，确保后续 SetMeshColor 能创建动态材质实例
+		static UMaterialInterface* BaseMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/MuJoCo/M_BaseColor.M_BaseColor"));
+		if (BaseMat)
+		{
+			ProcMesh->SetMaterial(0, BaseMat);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("M_BaseColor material not found at /Game/MuJoCo/M_BaseColor"));
+		}
+
 		// Add to output array
 
 		ProceduralMeshes.Add(ProcMesh);
@@ -533,20 +560,24 @@ void AMuJoCoSimulation::SetMeshColor(UStaticMeshComponent *StaticMeshComponent, 
 {
 	if (!StaticMeshComponent)
 		return;
-	// TODo: Add material to the mesh still issues
-	//	static UMaterialInterface* Material= FindObject<UMaterialInterface>(ANY_PACKAGE,TEXT("M_BaseColor"));         ///Game/MuJoCo/M_BaseColor.
-	//	if (!Material)
-	//	{
-	//	               return;
-	//	}
 
-	//	StaticMeshComponent->SetMaterial(0, Material);
-
-	// Create dynamic material instance
+	// 确保 mesh 有基础材质，如果没有则尝试加载 M_BaseColor
 	UMaterialInterface *BaseMaterial = StaticMeshComponent->GetMaterial(0);
 	if (!BaseMaterial)
-		return;
+	{
+		BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/MuJoCo/M_BaseColor.M_BaseColor"));
+		if (BaseMaterial)
+		{
+			StaticMeshComponent->SetMaterial(0, BaseMaterial);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("SetMeshColor: M_BaseColor material not found, cannot apply color"));
+			return;
+		}
+	}
 
+	// Create dynamic material instance
 	UMaterialInstanceDynamic *DynamicMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, StaticMeshComponent);
 	if (!DynamicMaterial)
 		return;

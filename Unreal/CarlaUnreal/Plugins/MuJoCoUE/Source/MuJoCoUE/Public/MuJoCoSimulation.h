@@ -232,11 +232,11 @@ public:
 	/** @brief Swing foot lift height in meters (Matrix: leg_height=0.1) */
 	static constexpr float SWING_HEIGHT = 0.06f;
 
-	/** @brief Body height (foot z below hip) in meters */
-	static constexpr float BODY_HEIGHT = 0.294f;
+	/** @brief Body height (foot z below hip) in meters. Matches standing pose (HIP=0.8, KNEE=-1.5): L1*cos(0.8)+L2*cos(-0.7)=0.3028 */
+	static constexpr float BODY_HEIGHT = 0.3028f;
 
-	/** @brief Nominal foot x offset from hip (forward) in meters */
-	static constexpr float FOOT_X_NOMINAL = 0.114f;
+	/** @brief Nominal foot x offset from hip (forward) in meters. 0 = feet directly under hips (matches standing pose) */
+	static constexpr float FOOT_X_NOMINAL = 0.0f;
 
 	/** @brief Thigh length (hip to knee) in meters */
 	static constexpr float L1 = 0.2f;

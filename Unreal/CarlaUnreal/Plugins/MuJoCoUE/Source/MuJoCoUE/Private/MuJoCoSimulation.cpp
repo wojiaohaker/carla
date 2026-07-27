@@ -806,7 +806,7 @@ void AMuJoCoSimulation::UpdateGaitTargets(float dt)
 
 		int base = leg * 3;
 		StandUpTargetAngles[base + 0] = abadTarget;  // ABAD
-		StandUpTargetAngles[base + 1] = hipAngle;    // HIP
+		StandUpTargetAngles[base + 1] = hipAngle - HALF_PI;    // HIP (IK is from +x axis; model HIP=0 is straight down -> subtract 90 deg)
 		StandUpTargetAngles[base + 2] = kneeAngle;   // KNEE
 	}
 }

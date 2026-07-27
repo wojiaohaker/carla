@@ -2378,3 +2378,12 @@ python3 codeformat.py --format-only # 仅格式化不检查
 | `Environment.sh` | `Util/Tools/` | 脚本环境 | 其他脚本 source |
 | `Check.sh` | `Util/Tools/` | 代码检查 | CI/CD |
 | `Deploy.sh` | `Util/Tools/` | 部署 | 发布流程 |
+
+
+
+十八、命令行启动项目
+
+```
+/home/qiyuan/UnrealEngine/UnrealEngine5_carla/Engine/Binaries/Linux/UnrealEditor /home/qiyuan/UnrealEngine/CarlaUE5/Unreal/CarlaUnreal/CarlaUnreal.uproject
+```
+

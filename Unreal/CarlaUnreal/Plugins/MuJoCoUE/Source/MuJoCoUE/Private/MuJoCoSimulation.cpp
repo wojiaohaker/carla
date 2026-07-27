@@ -265,9 +265,31 @@ void AMuJoCoSimulation::BeginPlay()
 	LoadModel(XmlSourcePath);
 	if (mModel)
 	{
+		// Set initial FLAT pose (Matrix Image 1: belly down, legs splayed outward)
+		if (mModel->nq >= 19) // 7 (freejoint) + 12 joints
+		{
+			mData->qpos[2] = 0.15; // body z: flat on ground
+
+			// Joint order: FAR(ABAD,HIP,KNEE), FBL, RAR, RBL
+			// ABAD sign: right legs (FAR=0, RAR=2) negative, left legs (FBL=1, RBL=3) positive
+			const float AbadInit[4] = { -0.4f, 0.4f, -0.4f, 0.4f };
+			for (int j = 0; j < 4; j++)
+			{
+				mData->qpos[7 + j*3 + 0] = AbadInit[j]; // ABAD splayed
+				mData->qpos[7 + j*3 + 1] = 0.2f;        // HIP slightly bent
+				mData->qpos[7 + j*3 + 2] = -0.4f;       // KNEE slightly bent
+			}
+		}
+		mj_forward(mModel, mData);
+
 		_info = ExtractModelInfo(mModel);
 		ConvertMuJoCoModelToProceduralMeshes(mModel, this);
 		GenerateMeshes(_info);
+
+		// Start simulation immediately (passive mode, robot stays in crouch)
+		StartSimulation();
+
+		UE_LOG(LogTemp, Warning, TEXT("MuJoCo: Started in crouch pose. Press U=Stand, Space=LieDown."));
 	}
 }
 
@@ -340,7 +362,12 @@ void AMuJoCoSimulation::SimulateMuJoCo(float DeltaTime)
 	}
 	double startTime = mData->time;
 	while (mData->time - startTime < DeltaTime)
+	{
+		// Apply PD stand-up control before each physics step
+		if (bStandUpActive)
+			ApplyStandUpControl();
 		mj_step(mModel, mData);
+	}
 
 	ModelInfo info;
 	if (!_info.bodies.size())
@@ -379,6 +406,31 @@ void AMuJoCoSimulation::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (bSimulationRunning)
 		SimulateMuJoCo(DeltaTime);
+}
+
+void AMuJoCoSimulation::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	// Stand / Lie down
+	PlayerInputComponent->BindAction("StandUp", IE_Pressed, this, &AMuJoCoSimulation::RequestStandUp);
+	PlayerInputComponent->BindAction("LieDown", IE_Pressed, this, &AMuJoCoSimulation::RequestLieDown);
+
+	// Walk directions (pressed/released)
+	PlayerInputComponent->BindAction("MoveForward", IE_Pressed, this, &AMuJoCoSimulation::OnMoveForwardPressed);
+	PlayerInputComponent->BindAction("MoveForward", IE_Released, this, &AMuJoCoSimulation::OnMoveForwardReleased);
+	PlayerInputComponent->BindAction("MoveBackward", IE_Pressed, this, &AMuJoCoSimulation::OnMoveBackwardPressed);
+	PlayerInputComponent->BindAction("MoveBackward", IE_Released, this, &AMuJoCoSimulation::OnMoveBackwardReleased);
+	PlayerInputComponent->BindAction("StrafeRight", IE_Pressed, this, &AMuJoCoSimulation::OnStrafeRightPressed);
+	PlayerInputComponent->BindAction("StrafeRight", IE_Released, this, &AMuJoCoSimulation::OnStrafeRightReleased);
+	PlayerInputComponent->BindAction("StrafeLeft", IE_Pressed, this, &AMuJoCoSimulation::OnStrafeLeftPressed);
+	PlayerInputComponent->BindAction("StrafeLeft", IE_Released, this, &AMuJoCoSimulation::OnStrafeLeftReleased);
+	PlayerInputComponent->BindAction("TurnRight", IE_Pressed, this, &AMuJoCoSimulation::OnTurnRightPressed);
+	PlayerInputComponent->BindAction("TurnRight", IE_Released, this, &AMuJoCoSimulation::OnTurnRightReleased);
+	PlayerInputComponent->BindAction("TurnLeft", IE_Pressed, this, &AMuJoCoSimulation::OnTurnLeftPressed);
+	PlayerInputComponent->BindAction("TurnLeft", IE_Released, this, &AMuJoCoSimulation::OnTurnLeftReleased);
+
+	UE_LOG(LogTemp, Warning, TEXT("[MuJoCo] Input bindings registered: U=Stand, Space=Lie, WASD=Move, QE=Turn"));
 }
 
 void AMuJoCoSimulation::SetControl(int Id, float Value)
@@ -585,4 +637,203 @@ void AMuJoCoSimulation::SetMeshColor(UStaticMeshComponent *StaticMeshComponent, 
 	DynamicMaterial->SetVectorParameterValue(FName("BaseColor"), Color);
 
 	StaticMeshComponent->SetMaterial(0, DynamicMaterial);
+}
+
+void AMuJoCoSimulation::RequestStandUp()
+{
+	if (!mModel || !mData)
+	{
+		UE_LOG(LogTemp, Error, TEXT("RequestStandUp: Model or data not loaded"));
+		return;
+	}
+
+	// Reset gait state
+	GaitPhase = 0.0f;
+	CmdVelX = CmdVelY = CmdVelYaw = 0.0f;
+
+	// Capture CURRENT joint angles as starting point
+	// (continuous trajectory handles any starting pose smoothly)
+	for (int i = 0; i < NUM_JOINTS; i++)
+	{
+		int jntIdx = i + 1; // skip freejoint
+		float currentPos = mData->qpos[mModel->jnt_qposadr[jntIdx]];
+		StandUpStartAngles[i] = currentPos;
+		StandUpTargetAngles[i] = currentPos; // target = current → zero error on first frame
+	}
+
+	bStandUpActive = true;
+	StandUpRampTime = 0.0f;
+
+	UE_LOG(LogTemp, Warning, TEXT("[MuJoCo] STAND UP - Unified gain: Kp=%.0f, Kd=%.1f. WASD=Move, QE=Turn, Space=LieDown"), PD_Kp, PD_Kd);
+}
+
+void AMuJoCoSimulation::RequestLieDown()
+{
+	if (!mModel || !mData)
+		return;
+
+	bStandUpActive = false;
+	CmdVelX = CmdVelY = CmdVelYaw = 0.0f;
+	for (int i = 0; i < mModel->nu; i++)
+		mData->ctrl[i] = 0.0f;
+
+	UE_LOG(LogTemp, Warning, TEXT("[MuJoCo] LIE DOWN - passive mode"));
+}
+
+void AMuJoCoSimulation::SetWalkVelocity(float X, float Y, float Yaw)
+{
+	CmdVelX = FMath::Clamp(X, -1.0f, 1.0f);
+	CmdVelY = FMath::Clamp(Y, -1.0f, 1.0f);
+	CmdVelYaw = FMath::Clamp(Yaw, -1.0f, 1.0f);
+}
+
+void AMuJoCoSimulation::UpdateGaitTargets(float dt)
+{
+	// Advance gait phase
+	GaitPhase += dt / GAIT_PERIOD;
+	if (GaitPhase >= 1.0f) GaitPhase -= 1.0f;
+
+	bool bHasCommand = (FMath::Abs(CmdVelX) > 0.01f || FMath::Abs(CmdVelYaw) > 0.01f || FMath::Abs(CmdVelY) > 0.01f);
+
+	// Throttled debug log
+	if (bHasCommand)
+	{
+		if (++GaitLogCounter >= 250)
+		{
+			GaitLogCounter = 0;
+			UE_LOG(LogTemp, Warning, TEXT("[Gait] cmd=(%.2f, %.2f, %.2f) phase=%.2f"),
+				CmdVelX, CmdVelY, CmdVelYaw, GaitPhase);
+		}
+	}
+	else
+	{
+		GaitLogCounter = 0;
+	}
+
+	// Stand-up ramp factor (overall progress 0→1 over STAND_UP_RAMP_DURATION)
+	float standRamp = FMath::Clamp(StandUpRampTime / STAND_UP_RAMP_DURATION, 0.0f, 1.0f);
+
+	// === Matrix THREE-phase stand-up: JOINT-SPACE continuous trajectory ===
+	// Continuous smooth path: Start → Crouch (at t=2s) → Standing (at t=3s)
+	// Phase A (0~1s): First half of path to crouch, LOW gain (gentle)
+	// Phase B (1~2s): Second half to crouch, MEDIUM gain
+	// Phase C (2~3s): Crouch to standing, HIGH gain
+	//
+	// NO discontinuities in target - smooth single trajectory!
+	const float PhaseBEnd = STAND_PHASE_A_DURATION + STAND_PHASE_B_DURATION;
+
+	// Keyframe: crouch pose (reached at t=2s)
+	const float HipCrouch = 0.6f, KneeCrouch = -1.2f;
+	// Keyframe: standing pose (reached at t=3s)
+	const float HipStand = 0.8f, KneeStand = -1.5f;
+
+	for (int leg = 0; leg < 4; leg++)
+	{
+		int base = leg * 3;
+
+		// ABAD: gather over first 1s, then stay 0
+		float abadT = FMath::Clamp(StandUpRampTime / STAND_PHASE_A_DURATION, 0.0f, 1.0f);
+		abadT = abadT * abadT * (3.0f - 2.0f * abadT);
+		StandUpTargetAngles[base + 0] = FMath::Lerp(StandUpStartAngles[base + 0], 0.0f, abadT);
+
+		// HIP/KNEE: continuous two-segment path
+		if (StandUpRampTime < PhaseBEnd)
+		{
+			// Segment 1 (0~2s): Start → Crouch (smoothstep over 2s)
+			float t = FMath::Clamp(StandUpRampTime / PhaseBEnd, 0.0f, 1.0f);
+			t = t * t * (3.0f - 2.0f * t);
+			StandUpTargetAngles[base + 1] = FMath::Lerp(StandUpStartAngles[base + 1], HipCrouch, t);
+			StandUpTargetAngles[base + 2] = FMath::Lerp(StandUpStartAngles[base + 2], KneeCrouch, t);
+		}
+		else
+		{
+			// Segment 2 (2~3s): Crouch → Standing
+			float t = FMath::Clamp((StandUpRampTime - PhaseBEnd) / STAND_PHASE_C_DURATION, 0.0f, 1.0f);
+			t = t * t * (3.0f - 2.0f * t);
+			StandUpTargetAngles[base + 1] = FMath::Lerp(HipCrouch, HipStand, t);
+			StandUpTargetAngles[base + 2] = FMath::Lerp(KneeCrouch, KneeStand, t);
+		}
+	}
+
+	// === PHASE 2: Walking (IK-based foot trajectory, only after stand-up complete) ===
+	if (!bHasCommand || standRamp < 1.0f)
+		return;
+
+	// Trot gait: diagonal pairs
+	const float PairOffset[4] = { 0.0f, 0.5f, 0.5f, 0.0f };
+
+	for (int leg = 0; leg < 4; leg++)
+	{
+		float legPhase = GaitPhase + PairOffset[leg];
+		if (legPhase >= 1.0f) legPhase -= 1.0f;
+
+		// Desired foot position in HIP frame (x=forward, z=down-negative)
+		float fx = FOOT_X_NOMINAL;
+		float fz = -BODY_HEIGHT;
+		float abadTarget = 0.0f;
+
+		// Compute stride for this leg
+		float strideX = CmdVelX * STRIDE_LENGTH;
+		// Yaw: differential between left/right legs
+		float yawSign = (leg == 0 || leg == 2) ? -1.0f : 1.0f;
+		strideX += CmdVelYaw * YAW_STRIDE * yawSign;
+
+		if (legPhase < 0.5f)
+		{
+			// === STANCE PHASE: foot on ground, sweep backward ===
+			float t = legPhase / 0.5f;
+			fx += strideX * (0.5f - t);
+			abadTarget = CmdVelY * LAT_STRIDE * (0.5f - t);
+		}
+		else
+		{
+			// === SWING PHASE: foot in air, return forward with lift ===
+			float t = (legPhase - 0.5f) / 0.5f;
+			fx += strideX * (-0.5f + t);
+			fz += SWING_HEIGHT * FMath::Sin(t * PI);
+			abadTarget = CmdVelY * LAT_STRIDE * (-0.5f + t);
+		}
+
+		// === 2-link IK: compute HIP and KNEE from foot position ===
+		float d2 = fx * fx + fz * fz;
+		float cosKnee = (d2 - L1 * L1 - L2 * L2) / (2.0f * L1 * L2);
+		cosKnee = FMath::Clamp(cosKnee, -1.0f, 1.0f);
+		float kneeAngle = -FMath::Acos(cosKnee);
+
+		float beta = FMath::Atan2(-fz, fx);
+		float alpha = FMath::Atan2(L2 * FMath::Sin(kneeAngle), L1 + L2 * FMath::Cos(kneeAngle));
+		float hipAngle = beta - alpha;
+
+		int base = leg * 3;
+		StandUpTargetAngles[base + 0] = abadTarget;  // ABAD
+		StandUpTargetAngles[base + 1] = hipAngle;    // HIP
+		StandUpTargetAngles[base + 2] = kneeAngle;   // KNEE
+	}
+}
+
+void AMuJoCoSimulation::ApplyStandUpControl()
+{
+	if (!mData || !mModel)
+		return;
+
+	float dt = mModel->opt.timestep;
+	StandUpRampTime += dt;
+
+	// Update gait targets (modulates StandUpTargetAngles)
+	UpdateGaitTargets(dt);
+
+	// Unified high gain: smoothstep trajectory provides slow-fast-slow profile
+	// No phase-dependent gain switching (eliminates gain-jump transients)
+	float kp = PD_Kp;
+	float kd = PD_Kd;
+
+	// PD control: torque = Kp * error - Kd * velocity
+	for (int i = 0; i < NUM_JOINTS && i < mModel->nu; i++)
+	{
+		int jntIdx = i + 1; // skip freejoint
+		float currentPos = mData->qpos[mModel->jnt_qposadr[jntIdx]];
+		float currentVel = mData->qvel[mModel->jnt_dofadr[jntIdx]];
+		float error = StandUpTargetAngles[i] - currentPos;
+		mData->ctrl[i] = kp * error - kd * currentVel;
+	}
 }

@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.h"
 
-#include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
 #include "ProceduralMeshComponent.h"
 // #include "Components/InstancedStaticMeshComponent.h"
 #include "MuJoCoSimulation.generated.h"
@@ -162,7 +162,7 @@ struct ModelInfo
 // UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MuJoCo")
 // UStaticMesh* defaultMesh;
 UCLASS()
-class MUJOCOUE_API AMuJoCoSimulation : public AActor
+class MUJOCOUE_API AMuJoCoSimulation : public APawn
 {
 	GENERATED_BODY()
 
@@ -195,6 +195,71 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MuJoCo")
 	UStaticMesh *defaultMesh;
+
+	/** @brief Unified PD gains (smoothstep trajectory provides speed profile, no gain switching) */
+	static constexpr float PD_Kp = 150.0f;
+	static constexpr float PD_Kd = 2.0f;
+
+	/** @brief Number of actuated joints */
+	static constexpr int32 NUM_JOINTS = 12;
+
+	/** @brief Whether stand-up PD control is active */
+	bool bStandUpActive = false;
+
+	/** @brief Elapsed time since stand-up was activated */
+	float StandUpRampTime = 0.0f;
+
+	/** @brief Matrix stand-up sequence timing (total 3s, DO NOT CHANGE) */
+	static constexpr float STAND_PHASE_A_DURATION = 1.0f;  // legs forward (Image 1→2)
+	static constexpr float STAND_PHASE_B_DURATION = 1.0f;  // legs backward (Image 2→3)
+	static constexpr float STAND_PHASE_C_DURATION = 1.0f;  // legs extend (Image 3→4)
+	static constexpr float STAND_UP_RAMP_DURATION = STAND_PHASE_A_DURATION + STAND_PHASE_B_DURATION + STAND_PHASE_C_DURATION; // 3s total
+
+	/** @brief Target joint angles (updated by gait generator each step) */
+	float StandUpTargetAngles[NUM_JOINTS];
+
+	/** @brief Captured joint angles at the moment stand-up is requested */
+	float StandUpStartAngles[NUM_JOINTS];
+
+	// ---- Gait controller (IK-based trot, following Matrix architecture) ----
+
+	/** @brief Gait period in seconds (Matrix: 0.2s, we use 0.3 for stability) */
+	static constexpr float GAIT_PERIOD = 0.3f;
+
+	/** @brief Stride length in meters (forward foot displacement per half-cycle) */
+	static constexpr float STRIDE_LENGTH = 0.08f;
+
+	/** @brief Swing foot lift height in meters (Matrix: leg_height=0.1) */
+	static constexpr float SWING_HEIGHT = 0.06f;
+
+	/** @brief Body height (foot z below hip) in meters */
+	static constexpr float BODY_HEIGHT = 0.294f;
+
+	/** @brief Nominal foot x offset from hip (forward) in meters */
+	static constexpr float FOOT_X_NOMINAL = 0.114f;
+
+	/** @brief Thigh length (hip to knee) in meters */
+	static constexpr float L1 = 0.2f;
+
+	/** @brief Shank length (knee to foot) in meters */
+	static constexpr float L2 = 0.21366f;
+
+	/** @brief Yaw stride differential factor */
+	static constexpr float YAW_STRIDE = 0.04f;
+
+	/** @brief Lateral stride factor */
+	static constexpr float LAT_STRIDE = 0.04f;
+
+	/** @brief Current gait phase [0, 1) */
+	float GaitPhase = 0.0f;
+
+	/** @brief Counter for throttled gait debug logging */
+	int32 GaitLogCounter = 0;
+
+	/** @brief Velocity commands (set by WASD/QE keys via Blueprint) */
+	float CmdVelX = 0.0f;   // W=+1 (forward), S=-1 (backward)
+	float CmdVelY = 0.0f;   // A=-1 (left), D=+1 (right)
+	float CmdVelYaw = 0.0f; // Q=-1 (turn left), E=+1 (turn right)
 
 protected:
 	virtual void BeginPlay() override;
@@ -256,12 +321,60 @@ protected:
 	void ConvertMuJoCoModelToProceduralMeshes(const mjModel *mjModel, UObject *Outer);
 
 	/**
-	 * Sets the color of a static mesh component.
+	 * @brief Request the robot to stand up using PD joint control
+	 * Call this from Blueprint (e.g. on 'U' key press)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "MuJoCo")
+	void RequestStandUp();
+
+	/**
+	 * @brief Request the robot to lie down (passive mode, zero torque)
+	 * Call this from Blueprint (e.g. on 'Space' key press)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "MuJoCo")
+	void RequestLieDown();
+
+	/**
+	 * @brief Set walking velocity command (call from Blueprint on WASD/QE)
+	 * @param X  Forward(+1)/Backward(-1)/Stop(0)
+	 * @param Y  Right(+1)/Left(-1)/Stop(0)
+	 * @param Yaw TurnRight(+1)/TurnLeft(-1)/Stop(0)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "MuJoCo")
+	void SetWalkVelocity(float X, float Y, float Yaw);
+
+	/**
+	 * @brief Sets the color of a static mesh component.
 	 *
 	 * @param StaticMeshComponent The static mesh component to update
 	 * @param Color The new linear color to apply to the mesh
 	 */
 	void SetMeshColor(UStaticMeshComponent *StaticMeshComponent, FLinearColor Color);
+
+	/**
+	 * @brief Applies PD control with gait-generated target angles
+	 */
+	void ApplyStandUpControl();
+
+	/**
+	 * @brief Updates StandUpTargetAngles using trot gait generator
+	 * @param dt Physics timestep
+	 */
+	void UpdateGaitTargets(float dt);
+
+	// Input handlers
+	void OnMoveForwardPressed() { SetWalkVelocity(1.0f, CmdVelY, CmdVelYaw); }
+	void OnMoveForwardReleased() { SetWalkVelocity(0.0f, CmdVelY, CmdVelYaw); }
+	void OnMoveBackwardPressed() { SetWalkVelocity(-1.0f, CmdVelY, CmdVelYaw); }
+	void OnMoveBackwardReleased() { SetWalkVelocity(0.0f, CmdVelY, CmdVelYaw); }
+	void OnStrafeRightPressed() { SetWalkVelocity(CmdVelX, 1.0f, CmdVelYaw); }
+	void OnStrafeRightReleased() { SetWalkVelocity(CmdVelX, 0.0f, CmdVelYaw); }
+	void OnStrafeLeftPressed() { SetWalkVelocity(CmdVelX, -1.0f, CmdVelYaw); }
+	void OnStrafeLeftReleased() { SetWalkVelocity(CmdVelX, 0.0f, CmdVelYaw); }
+	void OnTurnRightPressed() { SetWalkVelocity(CmdVelX, CmdVelY, 1.0f); }
+	void OnTurnRightReleased() { SetWalkVelocity(CmdVelX, CmdVelY, 0.0f); }
+	void OnTurnLeftPressed() { SetWalkVelocity(CmdVelX, CmdVelY, -1.0f); }
+	void OnTurnLeftReleased() { SetWalkVelocity(CmdVelX, CmdVelY, 0.0f); }
 
 	/**
 	 * used for Debugging toprintout some properties
@@ -271,6 +384,7 @@ protected:
 
 public:
 	virtual void Tick(float DeltaTime) override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	UFUNCTION(BlueprintCallable, Category = "MuJoCo")
 	bool LoadModel(FString Xml);

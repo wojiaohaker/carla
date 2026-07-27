@@ -247,6 +247,12 @@ public:
 	/** @brief Yaw stride differential factor */
 	static constexpr float YAW_STRIDE = 0.04f;
 
+	/** @brief Yaw rate feedback gain for heading stabilization (s). Cancels accumulated yaw drift in open-loop gait. */
+	static constexpr float YAW_DAMP_GAIN = 1.0f;
+
+	/** @brief Yaw rate low-pass filter time constant (s). Rejects gait-frequency yaw wiggle, keeps slow drift. */
+	static constexpr float YAW_FILTER_TAU = 0.5f;
+
 	/** @brief Lateral stride factor */
 	static constexpr float LAT_STRIDE = 0.04f;
 
@@ -255,6 +261,12 @@ public:
 
 	/** @brief Counter for throttled gait debug logging */
 	int32 GaitLogCounter = 0;
+
+	/** @brief Integrated yaw heading (rad), for drift diagnostics */
+	float YawHeading = 0.0f;
+
+	/** @brief Low-pass filtered yaw rate (rad/s), for heading stabilization feedback */
+	float YawRateLPF = 0.0f;
 
 	/** @brief Velocity commands (set by WASD/QE keys via Blueprint) */
 	float CmdVelX = 0.0f;   // W=+1 (forward), S=-1 (backward)

@@ -693,6 +693,10 @@ void AMuJoCoSimulation::UpdateGaitTargets(float dt)
 	GaitPhase += dt / GAIT_PERIOD;
 	if (GaitPhase >= 1.0f) GaitPhase -= 1.0f;
 
+	// Integrate yaw heading for drift diagnostics (world-frame z angular velocity)
+	if (mData)
+		YawHeading += mData->qvel[5] * dt;
+
 	bool bHasCommand = (FMath::Abs(CmdVelX) > 0.01f || FMath::Abs(CmdVelYaw) > 0.01f || FMath::Abs(CmdVelY) > 0.01f);
 
 	// Throttled debug log
@@ -701,8 +705,9 @@ void AMuJoCoSimulation::UpdateGaitTargets(float dt)
 		if (++GaitLogCounter >= 250)
 		{
 			GaitLogCounter = 0;
-			UE_LOG(LogTemp, Warning, TEXT("[Gait] cmd=(%.2f, %.2f, %.2f) phase=%.2f"),
-				CmdVelX, CmdVelY, CmdVelYaw, GaitPhase);
+			UE_LOG(LogTemp, Warning, TEXT("[Gait] cmd=(%.2f, %.2f, %.2f) phase=%.2f yawRate=%.3f rad/s yawDeg=%.1f"),
+				CmdVelX, CmdVelY, CmdVelYaw, GaitPhase,
+				mData->qvel[5], FMath::RadiansToDegrees(YawHeading));
 		}
 	}
 	else
@@ -759,6 +764,19 @@ void AMuJoCoSimulation::UpdateGaitTargets(float dt)
 	if (!bHasCommand || standRamp < 1.0f)
 		return;
 
+	// Yaw stabilization: measure body yaw rate and feed back to cancel drift.
+	// Open-loop gait accumulates yaw error (especially during backward walking),
+	// so we actively damp any unwanted rotation.
+	// Sign: yawCmd>0 makes left legs stride further -> clockwise torque (wz<0),
+	// so the plant is dwz/dt = -k*yawCmd. To damp wz we need yawCmd = +GAIN*wz.
+	// IMPORTANT: low-pass filter the yaw rate first. The raw signal contains large
+	// gait-frequency yaw wiggle (±0.8 rad/s); feeding that back directly hijacks the
+	// gait and makes the robot spin in place. The filter keeps only slow heading drift.
+	float yawRate = mData->qvel[5]; // freejoint world-frame z angular velocity
+	float lpfAlpha = FMath::Clamp(dt / YAW_FILTER_TAU, 0.0f, 1.0f);
+	YawRateLPF += (yawRate - YawRateLPF) * lpfAlpha;
+	float yawCmd = CmdVelYaw + YawRateLPF * YAW_DAMP_GAIN;
+
 	// Trot gait: diagonal pairs
 	const float PairOffset[4] = { 0.0f, 0.5f, 0.5f, 0.0f };
 
@@ -774,9 +792,9 @@ void AMuJoCoSimulation::UpdateGaitTargets(float dt)
 
 		// Compute stride for this leg
 		float strideX = CmdVelX * STRIDE_LENGTH;
-		// Yaw: differential between left/right legs
+		// Yaw: differential between left/right legs (user command + drift-canceling feedback)
 		float yawSign = (leg == 0 || leg == 2) ? -1.0f : 1.0f;
-		strideX += CmdVelYaw * YAW_STRIDE * yawSign;
+		strideX += yawCmd * YAW_STRIDE * yawSign;
 
 		if (legPhase < 0.5f)
 		{

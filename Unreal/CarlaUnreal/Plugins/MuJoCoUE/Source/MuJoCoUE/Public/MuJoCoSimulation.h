@@ -253,8 +253,8 @@ public:
 	/** @brief Yaw rate low-pass filter time constant (s). Rejects gait-frequency yaw wiggle, keeps slow drift. */
 	static constexpr float YAW_FILTER_TAU = 0.5f;
 
-	/** @brief Lateral stride factor */
-	static constexpr float LAT_STRIDE = 0.04f;
+	/** @brief Lateral stride factor (rad). Large enough to overcome ground friction. */
+	static constexpr float LAT_STRIDE = 0.10f;
 
 	/** @brief Current gait phase [0, 1) */
 	float GaitPhase = 0.0f;
@@ -267,6 +267,10 @@ public:
 
 	/** @brief Low-pass filtered yaw rate (rad/s), for heading stabilization feedback */
 	float YawRateLPF = 0.0f;
+
+	/** @brief Reference heading when lateral movement started (rad) */
+	float HeadingRef = 0.0f;
+	bool bHeadingRefValid = false;
 
 	/** @brief Velocity commands (set by WASD/QE keys via Blueprint) */
 	float CmdVelX = 0.0f;   // W=+1 (forward), S=-1 (backward)

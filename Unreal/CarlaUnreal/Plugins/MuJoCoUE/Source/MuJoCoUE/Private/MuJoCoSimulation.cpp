@@ -775,14 +775,47 @@ void AMuJoCoSimulation::UpdateGaitTargets(float dt)
 	float yawRate = mData->qvel[5]; // freejoint world-frame z angular velocity
 	float lpfAlpha = FMath::Clamp(dt / YAW_FILTER_TAU, 0.0f, 1.0f);
 	YawRateLPF += (yawRate - YawRateLPF) * lpfAlpha;
-	float yawCmd = CmdVelYaw + YawRateLPF * YAW_DAMP_GAIN;
+	// Yaw control: heading-hold during lateral, rate-damper during forward.
+	float latAbs = FMath::Clamp(FMath::Abs(CmdVelY), 0.0f, 1.0f);
+	const bool bLateral = (latAbs > 0.3f);
+	float yawCmd;
+	if (bLateral)
+	{
+		// HEADING HOLD: capture reference heading at lateral start, then use
+		// P+D controller to keep heading fixed. strideX differential creates yaw
+		// torque with ZERO net forward/backward force (left/right cancel).
+		if (!bHeadingRefValid)
+		{
+			HeadingRef = YawHeading;
+			bHeadingRefValid = true;
+		}
+		float headingErr = YawHeading - HeadingRef;
+		// Normalize to [-PI, PI]
+		while (headingErr > PI) headingErr -= 2.0f * PI;
+		while (headingErr < -PI) headingErr += 2.0f * PI;
+		const float HEADING_KP = 5.0f;  // proportional heading correction
+		const float HEADING_KD = 0.5f;  // rate damping
+		yawCmd = -HEADING_KP * headingErr - HEADING_KD * YawRateLPF;
+		yawCmd = FMath::Clamp(yawCmd, -2.0f, 2.0f);
+	}
+	else
+	{
+		bHeadingRefValid = false;
+		yawCmd = CmdVelYaw + YawRateLPF * YAW_DAMP_GAIN;
+	}
 
-	// Trot gait: diagonal pairs
-	const float PairOffset[4] = { 0.0f, 0.5f, 0.5f, 0.0f };
+	// Gait selection:
+	// - Forward/backward/yaw: Trot (diagonal pairs, 50% duty)
+	// - Lateral: SEQUENTIAL walk (each leg offset by 0.25). At any time 3 legs
+	//   stance + 1 leg swing. Stance legs pull body toward offset feet (strong,
+	//   grounded). Swing leg repositions (weak, light). Net ratcheting motion.
+	const float SWING_FRAC_LAT = 0.25f; // 25% swing per leg (75% stance = 3 legs support)
+	const float TrotOffset[4] = { 0.0f, 0.5f, 0.5f, 0.0f };
+	const float LatSeqOffset[4] = { 0.0f, 0.25f, 0.5f, 0.75f }; // sequential walk
 
 	for (int leg = 0; leg < 4; leg++)
 	{
-		float legPhase = GaitPhase + PairOffset[leg];
+		float legPhase = GaitPhase + (bLateral ? LatSeqOffset[leg] : TrotOffset[leg]);
 		if (legPhase >= 1.0f) legPhase -= 1.0f;
 
 		// Desired foot position in HIP frame (x=forward, z=down-negative)
@@ -790,26 +823,47 @@ void AMuJoCoSimulation::UpdateGaitTargets(float dt)
 		float fz = -BODY_HEIGHT;
 		float abadTarget = 0.0f;
 
-		// Compute stride for this leg
+		// Compute forward stride for this leg
 		float strideX = CmdVelX * STRIDE_LENGTH;
-		// Yaw: differential between left/right legs (user command + drift-canceling feedback)
 		float yawSign = (leg == 0 || leg == 2) ? -1.0f : 1.0f;
 		strideX += yawCmd * YAW_STRIDE * yawSign;
 
-		if (legPhase < 0.5f)
+		if (!bLateral)
 		{
-			// === STANCE PHASE: foot on ground, sweep backward ===
-			float t = legPhase / 0.5f;
-			fx += strideX * (0.5f - t);
-			abadTarget = CmdVelY * LAT_STRIDE * (0.5f - t);
+			// === NORMAL TROT: forward/backward/yaw ===
+			if (legPhase < 0.5f)
+			{
+				float t = legPhase / 0.5f;
+				fx += strideX * (0.5f - t);
+			}
+			else
+			{
+				float t = (legPhase - 0.5f) / 0.5f;
+				fx += strideX * (-0.5f + t);
+				fz += SWING_HEIGHT * FMath::Sin(t * PI);
+			}
 		}
 		else
 		{
-			// === SWING PHASE: foot in air, return forward with lift ===
-			float t = (legPhase - 0.5f) / 0.5f;
-			fx += strideX * (-0.5f + t);
-			fz += SWING_HEIGHT * FMath::Sin(t * PI);
-			abadTarget = CmdVelY * LAT_STRIDE * (-0.5f + t);
+			// === LATERAL SEQUENCE WALK ===
+			// Negate CmdVelY: +ABAD = foot LEFT -> body pulled LEFT during stance.
+			// D (CmdVelY=+1) should go RIGHT -> need -ABAD -> latCmd = -CmdVelY.
+			float latCmd = -CmdVelY;
+			float stanceFrac = 1.0f - SWING_FRAC_LAT; // 0.75
+			if (legPhase < stanceFrac)
+			{
+				// STANCE: foot grounded at offset, PD pulls body toward foot.
+				// ABAD sweeps from offset to 0 (body shifts toward offset direction).
+				float t = legPhase / stanceFrac;
+				abadTarget = latCmd * LAT_STRIDE * (1.0f - t);
+			}
+			else
+			{
+				// SWING: single leg lifts and returns to offset for next step.
+				float t = (legPhase - stanceFrac) / SWING_FRAC_LAT;
+				fz += SWING_HEIGHT * FMath::Sin(t * PI);
+				abadTarget = latCmd * LAT_STRIDE * t;
+			}
 		}
 
 		// === 2-link IK: compute HIP and KNEE from foot position ===

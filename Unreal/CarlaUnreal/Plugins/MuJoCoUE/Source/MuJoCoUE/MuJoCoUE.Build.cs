@@ -18,7 +18,7 @@ public class MuJoCoUE : ModuleRules
 
 		PrivateIncludePaths.AddRange(
 			new string[] {
-				// ... add other private include paths required here ...
+				Path.Combine(ModuleDirectory, "Proto"),
 			}
 			);
 
@@ -39,8 +39,12 @@ public class MuJoCoUE : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"Projects", 
-				// ... add private dependencies that you statically link with here ...	
+				"Projects",
+				"Sockets",
+				"Networking",
+				"Json",
+				"JsonUtilities",
+				"Protobuf",
 			}
 			);
 
@@ -85,6 +89,10 @@ public class MuJoCoUE : ModuleRules
 
 			// Link against the shared library
 			PublicAdditionalLibraries.Add(Path.Combine(MujocoLibDir, "libmujoco.so"));
+
+			// Protobuf 3.12.4 静态库 (与 mc_ctrl 通信)
+			string ProtobufLinuxDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../../Protobuf/Source/ThirdParty/Linux/lib"));
+			PublicAdditionalLibraries.Add(Path.Combine(ProtobufLinuxDir, "libprotobuf.a"));
 
 			// Copy libmujoco.so to plugin Binaries/Linux if not present
 			string SoSourcePath = Path.Combine(MujocoLibDir, "libmujoco.so.3.3.0");

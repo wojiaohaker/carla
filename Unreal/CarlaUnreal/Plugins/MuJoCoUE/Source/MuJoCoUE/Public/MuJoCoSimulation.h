@@ -9,6 +9,8 @@
 #include "GameFramework/Pawn.h"
 #include "ProceduralMeshComponent.h"
 // #include "Components/InstancedStaticMeshComponent.h"
+#include "UdpReceiverComponent.h"
+#include "UdpSenderComponent.h"
 #include "MuJoCoSimulation.generated.h"
 
 /**
@@ -203,6 +205,35 @@ public:
 	/** @brief Number of actuated joints */
 	static constexpr int32 NUM_JOINTS = 12;
 
+	// ---- UDP mc_ctrl integration ----
+
+	/** @brief UDP receiver for mc_ctrl commands (port 25002) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UDP Control")
+	UUdpReceiverComponent* UdpReceiver;
+
+	/** @brief UDP sender for state feedback to mc_ctrl (port 25001) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UDP Control")
+	UUdpSenderComponent* UdpSender;
+
+	/** @brief Enable UDP control mode (mc_ctrl drives joints, local gait disabled) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Control")
+	bool bUdpControlEnabled = true;
+
+	/** @brief Timeout (s) before UDP commands are considered stale */
+	static constexpr float UDP_CMD_TIMEOUT = 0.1f;
+
+	/** @brief Gain ramp duration (s) when UDP control first activates. Prevents launch impulse. */
+	static constexpr float UDP_GAIN_RAMP_DURATION = 1.0f;
+
+	/** @brief Whether UDP control was active last physics step (for edge detection) */
+	bool bUdpWasActive = false;
+
+	/** @brief Elapsed time since UDP control activated (for gain ramp) */
+	float UdpGainRampTime = 0.0f;
+
+	/** @brief Joint angles captured at UDP activation moment (for target blending) */
+	float UdpActivationAngles[NUM_JOINTS];
+
 	/** @brief Whether stand-up PD control is active */
 	bool bStandUpActive = false;
 
@@ -371,6 +402,17 @@ protected:
 	 * @brief Applies PD control with gait-generated target angles
 	 */
 	void ApplyStandUpControl();
+
+	/**
+	 * @brief Applies PD control using targets received from mc_ctrl via UDP
+	 * @param GainScale Gain multiplier [0,1] for activation ramp (prevents launch impulse)
+	 */
+	void ApplyUdpControl(float GainScale = 1.0f);
+
+	/**
+	 * @brief Sends current robot state to mc_ctrl via UDP
+	 */
+	void SendStateToMcCtrl();
 
 	/**
 	 * @brief Updates StandUpTargetAngles using trot gait generator

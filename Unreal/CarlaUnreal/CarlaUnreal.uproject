@@ -1,90 +1,94 @@
 {
-	"FileVersion": 3,
-	"EngineAssociation": "{DFE920A7-237E-4117-8806-739B6784944E}",
-	"Category": "",
-	"Description": "",
-	"Modules": [
-		{
-			"Name": "CarlaUnreal",
-			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"AdditionalDependencies": [
-				"Engine",
-				"Carla",
-				"CoreUObject"
-			]
-		},
-		{
-			"Name": "CarlaDeviceProfileSelector",
-			"Type": "Runtime",
-			"LoadingPhase": "PostConfigInit"
-		}
-	],
-	"Plugins": [
-		{
-			"Name": "Carla",
-			"Enabled": true
-		},
-		{
-			"Name": "RenderDocPlugin",
-			"Enabled": true
-		},
-		{
-			"Name": "CarSim",
-			"Enabled": false,
-			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/2d712649ca864c80812da7b5252f5608"
-		},
-		{
-			"Name": "EditorScriptingUtilities",
-			"Enabled": true
-		},
-		{
-			"Name": "CarlaTools",
-			"Enabled": true
-		},
-		{
-			"Name": "PythonScriptPlugin",
-			"Enabled": true
-		},
-		{
-			"Name": "AlembicHairImporter",
-			"Enabled": true
-		},
-		{
-			"Name": "HairStrands",
-			"Enabled": true
-		},
-		{
-			"Name": "SunPosition",
-			"Enabled": true
-		},
-		{
-			"Name": "ModelingToolsEditorMode",
-			"Enabled": true,
-			"TargetAllowList": [
-				"Editor"
-			]
-		},
-		{
-			"Name": "RigLogic",
-			"Enabled": true
-		},
-		{
-			"Name": "Volumetrics",
-			"Enabled": true
-		},
-		{
-			"Name": "PerformanceMonitor",
-			"Enabled": true
-		},
-		{
-			"Name": "GeoReferencing",
-			"Enabled": true
-		}
-	],
-	"TargetPlatforms": [
-		"Linux",
-		"LinuxArm64",
-		"Windows"
-	]
+  "FileVersion": 3,
+  "EngineAssociation": "{DFE920A7-237E-4117-8806-739B6784944E}",
+  "Category": "",
+  "Description": "",
+  "Modules": [
+    {
+      "Name": "CarlaUnreal",
+      "Type": "Runtime",
+      "LoadingPhase": "Default",
+      "AdditionalDependencies": [
+        "Engine",
+        "Carla",
+        "CoreUObject"
+      ]
+    },
+    {
+      "Name": "CarlaDeviceProfileSelector",
+      "Type": "Runtime",
+      "LoadingPhase": "PostConfigInit"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "Carla",
+      "Enabled": true
+    },
+    {
+      "Name": "RenderDocPlugin",
+      "Enabled": true
+    },
+    {
+      "Name": "CarSim",
+      "Enabled": false,
+      "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/2d712649ca864c80812da7b5252f5608"
+    },
+    {
+      "Name": "EditorScriptingUtilities",
+      "Enabled": true
+    },
+    {
+      "Name": "CarlaTools",
+      "Enabled": true
+    },
+    {
+      "Name": "PythonScriptPlugin",
+      "Enabled": true
+    },
+    {
+      "Name": "AlembicHairImporter",
+      "Enabled": true
+    },
+    {
+      "Name": "HairStrands",
+      "Enabled": true
+    },
+    {
+      "Name": "SunPosition",
+      "Enabled": true
+    },
+    {
+      "Name": "ModelingToolsEditorMode",
+      "Enabled": true,
+      "TargetAllowList": [
+        "Editor"
+      ]
+    },
+    {
+      "Name": "RigLogic",
+      "Enabled": true
+    },
+    {
+      "Name": "Volumetrics",
+      "Enabled": true
+    },
+    {
+      "Name": "PerformanceMonitor",
+      "Enabled": true
+    },
+    {
+      "Name": "GeoReferencing",
+      "Enabled": true
+    },
+    {
+      "Name": "Protobuf",
+      "Enabled": true
+    }
+  ],
+  "TargetPlatforms": [
+    "Linux",
+    "LinuxArm64",
+    "Windows"
+  ]
 }

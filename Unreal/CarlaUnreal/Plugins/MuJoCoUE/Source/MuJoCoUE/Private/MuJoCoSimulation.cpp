@@ -248,6 +248,11 @@ AMuJoCoSimulation::AMuJoCoSimulation()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Create UDP components for mc_ctrl communication
+	UdpReceiver = CreateDefaultSubobject<UUdpReceiverComponent>(TEXT("UdpReceiver"));
+	UdpSender = CreateDefaultSubobject<UUdpSenderComponent>(TEXT("UdpSender"));
+
 	if (HasAnyFlags(RF_ClassDefaultObject))
 	{
 		return;
@@ -360,13 +365,97 @@ void AMuJoCoSimulation::SimulateMuJoCo(float DeltaTime)
 		UE_LOG(LogTemp, Error, TEXT("Model or data is null"));
 		return;
 	}
+
+	// Throttled UDP diagnostic (every ~2s)
+	static int32 DiagCounter = 0;
+	if (++DiagCounter >= 120)
+	{
+		DiagCounter = 0;
+		int64 Pkts = UdpReceiver ? UdpReceiver->TotalPacketsReceived : 0;
+		int64 Cmds = UdpReceiver ? UdpReceiver->TotalCommandsParsed : 0;
+		bool bFresh = false;
+		float diagMaxKp = 0.0f;
+		if (UdpReceiver && UdpReceiver->LastCommand.bValid)
+		{
+			double age = FPlatformTime::Seconds() - UdpReceiver->LastCommand.ReceiveTime;
+			bFresh = (age < UDP_CMD_TIMEOUT);
+			for (int32 k = 0; k < UdpReceiver->LastCommand.KpValues.Num(); k++)
+			{
+				if (UdpReceiver->LastCommand.KpValues[k] > diagMaxKp)
+					diagMaxKp = UdpReceiver->LastCommand.KpValues[k];
+			}
+		}
+		UE_LOG(LogTemp, Warning, TEXT("[UDP-Diag] pkts=%lld cmds=%lld fresh=%d maxKp=%.1f active=%d"),
+			Pkts, Cmds, bFresh ? 1 : 0, diagMaxKp, (bFresh && diagMaxKp > 10.0f) ? 1 : 0);
+	}
+
 	double startTime = mData->time;
 	while (mData->time - startTime < DeltaTime)
 	{
-		// Apply PD stand-up control before each physics step
-		if (bStandUpActive)
+		// Control priority: UDP (mc_ctrl) > StandUp/Gait > Passive
+		// Gate: only apply UDP when mc_ctrl is in ACTIVE mode (Kp > threshold)
+		// mc_ctrl sends low/zero Kp in damping/idle mode before user presses U
+		bool bUdpActive = false;
+		if (bUdpControlEnabled && UdpReceiver && UdpReceiver->LastCommand.bValid)
+		{
+			double age = FPlatformTime::Seconds() - UdpReceiver->LastCommand.ReceiveTime;
+			if (age < UDP_CMD_TIMEOUT)
+			{
+				// Check if mc_ctrl is in active control (any Kp > 10)
+				const FUdpCommandData& Cmd = UdpReceiver->LastCommand;
+				float maxKp = 0.0f;
+				for (int32 k = 0; k < Cmd.KpValues.Num(); k++)
+				{
+					if (Cmd.KpValues[k] > maxKp) maxKp = Cmd.KpValues[k];
+				}
+				if (maxKp > 10.0f)
+				{
+					// Rising edge: reset gain ramp timer and capture current joint angles
+					if (!bUdpWasActive)
+					{
+						UdpGainRampTime = 0.0f;
+						// Capture current joint positions for target blending
+						for (int j = 0; j < NUM_JOINTS && j < mModel->nu; j++)
+						{
+							int jntIdx = j + 1; // skip freejoint
+							UdpActivationAngles[j] = static_cast<float>(mData->qpos[mModel->jnt_qposadr[jntIdx]]);
+						}
+						UE_LOG(LogTemp, Warning, TEXT("[UDP] mc_ctrl active (maxKp=%.0f), gain ramp %.1fs + target blend"), maxKp, UDP_GAIN_RAMP_DURATION);
+					}
+					UdpGainRampTime += mModel->opt.timestep;
+					float gainScale = FMath::Clamp(UdpGainRampTime / UDP_GAIN_RAMP_DURATION, 0.0f, 1.0f);
+					ApplyUdpControl(gainScale);
+					bUdpActive = true;
+				}
+				else
+				{
+					// mc_ctrl in damping/idle mode (Kp<=10): apply gentle damping to prevent uncontrolled fall
+					for (int i = 0; i < mModel->nu && i < NUM_JOINTS; i++)
+					{
+						int jntIdx = i + 1;
+						float vel = static_cast<float>(mData->qvel[mModel->jnt_dofadr[jntIdx]]);
+						mData->ctrl[i] = FMath::Clamp(-2.0f * vel, -10.0f, 10.0f);
+					}
+				}
+			}
+			else if (bStandUpActive)
+			{
+				ApplyStandUpControl();
+			}
+		}
+		else if (bStandUpActive)
+		{
 			ApplyStandUpControl();
+		}
+		bUdpWasActive = bUdpActive;
+
 		mj_step(mModel, mData);
+
+		// Send state feedback to mc_ctrl after each physics step
+		if (bUdpControlEnabled && UdpSender)
+		{
+			SendStateToMcCtrl();
+		}
 	}
 
 	ModelInfo info;
@@ -413,7 +502,7 @@ void AMuJoCoSimulation::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	// Stand / Lie down
-	PlayerInputComponent->BindAction("StandUp", IE_Pressed, this, &AMuJoCoSimulation::RequestStandUp);
+	/*PlayerInputComponent->BindAction("StandUp", IE_Pressed, this, &AMuJoCoSimulation::RequestStandUp);
 	PlayerInputComponent->BindAction("LieDown", IE_Pressed, this, &AMuJoCoSimulation::RequestLieDown);
 
 	// Walk directions (pressed/released)
@@ -428,7 +517,7 @@ void AMuJoCoSimulation::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("TurnRight", IE_Pressed, this, &AMuJoCoSimulation::OnTurnRightPressed);
 	PlayerInputComponent->BindAction("TurnRight", IE_Released, this, &AMuJoCoSimulation::OnTurnRightReleased);
 	PlayerInputComponent->BindAction("TurnLeft", IE_Pressed, this, &AMuJoCoSimulation::OnTurnLeftPressed);
-	PlayerInputComponent->BindAction("TurnLeft", IE_Released, this, &AMuJoCoSimulation::OnTurnLeftReleased);
+	PlayerInputComponent->BindAction("TurnLeft", IE_Released, this, &AMuJoCoSimulation::OnTurnLeftReleased);*/
 
 	UE_LOG(LogTemp, Warning, TEXT("[MuJoCo] Input bindings registered: U=Stand, Space=Lie, WASD=Move, QE=Turn"));
 }
@@ -908,4 +997,138 @@ void AMuJoCoSimulation::ApplyStandUpControl()
 		float error = StandUpTargetAngles[i] - currentPos;
 		mData->ctrl[i] = kp * error - kd * currentVel;
 	}
+}
+
+void AMuJoCoSimulation::ApplyUdpControl(float GainScale)
+{
+	if (!mData || !mModel || !UdpReceiver)
+		return;
+
+	const FUdpCommandData& Cmd = UdpReceiver->LastCommand;
+
+	if (Cmd.JointTargets.Num() < NUM_JOINTS)
+		return;
+
+	// PD control using targets and gains from mc_ctrl
+	// Protocol order in JointTargets: [abad×4(FR,FL,RR,RL), hip×4, knee×4]
+	// MuJoCo joint order: leg0(ABAD,HIP,KNEE), leg1(ABAD,HIP,KNEE), ...
+	// Mapping: MuJoCo(leg*3+jointType) ← Protocol(jointType*4+leg)
+	for (int leg = 0; leg < 4; leg++)
+	{
+		for (int jointType = 0; jointType < 3; jointType++)
+		{
+			int mjIdx = leg * 3 + jointType; // MuJoCo actuator index
+			int protoIdx = jointType * 4 + leg; // Protocol array index
+
+			if (mjIdx >= mModel->nu)
+				break;
+
+			int jntIdx = mjIdx + 1; // skip freejoint (qpos[0..6])
+			float currentPos = mData->qpos[mModel->jnt_qposadr[jntIdx]];
+			float currentVel = mData->qvel[mModel->jnt_dofadr[jntIdx]];
+
+			float target = Cmd.JointTargets[protoIdx];
+			float kp = (Cmd.KpValues.Num() > protoIdx && Cmd.KpValues[protoIdx] > 0.0f) ? Cmd.KpValues[protoIdx] : 20.0f;
+			float kd = (Cmd.KdValues.Num() > protoIdx && Cmd.KdValues[protoIdx] > 0.0f) ? Cmd.KdValues[protoIdx] : 0.7f;
+
+			// Target blending: lerp from activation pose to mc_ctrl target
+			// This prevents large position errors from generating explosive torques
+			float blendedTarget = FMath::Lerp(UdpActivationAngles[mjIdx], target, GainScale);
+
+			// Apply gain ramp to prevent launch impulse on activation
+			kp *= GainScale;
+			kd *= GainScale;
+
+			float torque = kp * (blendedTarget - currentPos) - kd * currentVel;
+
+			// Add feedforward torque if provided (also scaled)
+			if (Cmd.TauFF.Num() > protoIdx)
+			{
+				torque += Cmd.TauFF[protoIdx] * GainScale;
+			}
+
+			// Clamp to actuator limits (±28 Nm for xgb)
+			mData->ctrl[mjIdx] = FMath::Clamp(torque, -28.0f, 28.0f);
+		}
+	}
+}
+
+void AMuJoCoSimulation::SendStateToMcCtrl()
+{
+	if (!mData || !mModel || !UdpSender)
+		return;
+
+	// Build joint arrays: [abad×4, hip×4, knee×4]
+	// MuJoCo joint order: FAR(ABAD,HIP,KNEE), FBL, RAR, RBL
+	// Protocol order:     abad[FR,FL,RR,RL], hip[FR,FL,RR,RL], knee[FR,FL,RR,RL]
+	TArray<float> JointPos, JointVel, JointTau;
+	JointPos.SetNum(12);
+	JointVel.SetNum(12);
+	JointTau.SetNum(12);
+
+	for (int leg = 0; leg < 4; leg++)
+	{
+		for (int jointType = 0; jointType < 3; jointType++)
+		{
+			// MuJoCo index: leg*3 + jointType (skip freejoint)
+			int mjIdx = leg * 3 + jointType;
+			int jntIdx = mjIdx + 1; // +1 to skip freejoint
+
+			// Protocol index: jointType*4 + leg
+			int protoIdx = jointType * 4 + leg;
+
+			JointPos[protoIdx] = static_cast<float>(mData->qpos[mModel->jnt_qposadr[jntIdx]]);
+			JointVel[protoIdx] = static_cast<float>(mData->qvel[mModel->jnt_dofadr[jntIdx]]);
+			JointTau[protoIdx] = static_cast<float>(mData->qfrc_actuator[mModel->dof_jntid[mModel->jnt_dofadr[jntIdx]]]);
+		}
+	}
+
+	// IMU data from base body (body 1 = torso)
+	// Quaternion: MuJoCo stores [w,x,y,z] in body_xquat
+	TArray<float> Quat, Gyro, Acc, RPY;
+	Quat.SetNum(4);
+	Gyro.SetNum(3);
+	Acc.SetNum(3);
+	RPY.SetNum(3);
+
+	// Base body quaternion (world frame)
+	int baseBody = 1; // torso
+	Quat[0] = static_cast<float>(mData->xquat[baseBody * 4 + 0]); // w
+	Quat[1] = static_cast<float>(mData->xquat[baseBody * 4 + 1]); // x
+	Quat[2] = static_cast<float>(mData->xquat[baseBody * 4 + 2]); // y
+	Quat[3] = static_cast<float>(mData->xquat[baseBody * 4 + 3]); // z
+
+	// Angular velocity in BODY frame (gyroscope)
+	// MuJoCo cvel is [angular(3), linear(3)] in global frame
+	// Transform to body frame using rotation matrix from xmat
+	float wx = static_cast<float>(mData->cvel[baseBody * 6 + 0]);
+	float wy = static_cast<float>(mData->cvel[baseBody * 6 + 1]);
+	float wz = static_cast<float>(mData->cvel[baseBody * 6 + 2]);
+	// xmat is row-major 3x3 rotation (world←body)
+	const double* R = &mData->xmat[baseBody * 9];
+	// Body angular velocity = R^T * world angular velocity
+	Gyro[0] = static_cast<float>(R[0]*wx + R[3]*wy + R[6]*wz);
+	Gyro[1] = static_cast<float>(R[1]*wx + R[4]*wy + R[7]*wz);
+	Gyro[2] = static_cast<float>(R[2]*wx + R[5]*wy + R[8]*wz);
+
+	// Accelerometer in BODY frame
+	// A real accelerometer measures specific force = acceleration - gravity
+	// When stationary and upright: acc = [0, 0, +9.81] (pointing up in body Z)
+	// Compute: acc_body = R^T * (linear_accel_world - gravity_world)
+	// For simplicity, use velocity derivative approximation + gravity projection
+	// gravity_world = [0, 0, -9.81], specific_force = -gravity in body frame when static
+	float gx = 0.0f, gy = 0.0f, gz = -9.81f;
+	// acc_body = R^T * (-gravity) = R^T * [0, 0, 9.81]
+	Acc[0] = static_cast<float>(R[6] * 9.81);  // R^T row0 · [0,0,9.81]
+	Acc[1] = static_cast<float>(R[7] * 9.81);  // R^T row1 · [0,0,9.81]
+	Acc[2] = static_cast<float>(R[8] * 9.81);  // R^T row2 · [0,0,9.81]
+
+	// RPY from quaternion
+	float w = Quat[0], x = Quat[1], y = Quat[2], z = Quat[3];
+	RPY[0] = FMath::Atan2(2.0f * (w*x + y*z), 1.0f - 2.0f * (x*x + y*y)); // roll
+	RPY[1] = FMath::Asin(FMath::Clamp(2.0f * (w*y - z*x), -1.0f, 1.0f));   // pitch
+	RPY[2] = FMath::Atan2(2.0f * (w*z + x*y), 1.0f - 2.0f * (y*y + z*z)); // yaw
+
+	UdpSender->UpdateState(JointPos, JointVel, JointTau, Quat, Gyro, Acc, RPY);
+	UdpSender->SendState();
 }

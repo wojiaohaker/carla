@@ -47,7 +47,7 @@ struct TableStruct_robot_5fsdk_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[2]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[5]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -56,17 +56,29 @@ struct TableStruct_robot_5fsdk_2eproto {
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_robot_5fsdk_2eproto;
 namespace robot_sdk {
 namespace pb {
+class AppCmd;
+class AppCmdDefaultTypeInternal;
+extern AppCmdDefaultTypeInternal _AppCmd_default_instance_;
+class HighLevelCmd;
+class HighLevelCmdDefaultTypeInternal;
+extern HighLevelCmdDefaultTypeInternal _HighLevelCmd_default_instance_;
 class RobotCmd;
 class RobotCmdDefaultTypeInternal;
 extern RobotCmdDefaultTypeInternal _RobotCmd_default_instance_;
 class RobotState;
 class RobotStateDefaultTypeInternal;
 extern RobotStateDefaultTypeInternal _RobotState_default_instance_;
+class SDKCmd;
+class SDKCmdDefaultTypeInternal;
+extern SDKCmdDefaultTypeInternal _SDKCmd_default_instance_;
 }  // namespace pb
 }  // namespace robot_sdk
 PROTOBUF_NAMESPACE_OPEN
+template<> ::robot_sdk::pb::AppCmd* Arena::CreateMaybeMessage<::robot_sdk::pb::AppCmd>(Arena*);
+template<> ::robot_sdk::pb::HighLevelCmd* Arena::CreateMaybeMessage<::robot_sdk::pb::HighLevelCmd>(Arena*);
 template<> ::robot_sdk::pb::RobotCmd* Arena::CreateMaybeMessage<::robot_sdk::pb::RobotCmd>(Arena*);
 template<> ::robot_sdk::pb::RobotState* Arena::CreateMaybeMessage<::robot_sdk::pb::RobotState>(Arena*);
+template<> ::robot_sdk::pb::SDKCmd* Arena::CreateMaybeMessage<::robot_sdk::pb::SDKCmd>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 namespace robot_sdk {
 namespace pb {
@@ -189,20 +201,22 @@ class RobotState PROTOBUF_FINAL :
     kQAbadFieldNumber = 1,
     kQHipFieldNumber = 2,
     kQKneeFieldNumber = 3,
-    kQdAbadFieldNumber = 4,
-    kQdHipFieldNumber = 5,
-    kQdKneeFieldNumber = 6,
-    kOmegaBodyFieldNumber = 7,
-    kTauAbadFbFieldNumber = 8,
-    kTauHipFbFieldNumber = 9,
-    kTauKneeFbFieldNumber = 10,
-    kPositionFieldNumber = 11,
-    kTauFfFieldNumber = 12,
+    kQFootFieldNumber = 4,
+    kQdAbadFieldNumber = 5,
+    kQdHipFieldNumber = 6,
+    kQdKneeFieldNumber = 7,
+    kQdFootFieldNumber = 8,
+    kTauAbadFbFieldNumber = 9,
+    kTauHipFbFieldNumber = 10,
+    kTauKneeFbFieldNumber = 11,
+    kTauFootFbFieldNumber = 12,
     kQuatFieldNumber = 13,
     kGyroFieldNumber = 14,
     kAccFieldNumber = 15,
-    kRpyFieldNumber = 19,
-    kOmegaWorldFieldNumber = 20,
+    kRpyFieldNumber = 16,
+    kDepthFieldNumber = 18,
+    kPositionFieldNumber = 19,
+    kVWorldFieldNumber = 20,
     kTimeStampFieldNumber = 17,
   };
   // repeated float q_abad = 1;
@@ -271,7 +285,29 @@ class RobotState PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_q_knee();
 
-  // repeated float qd_abad = 4;
+  // repeated float q_foot = 4;
+  int q_foot_size() const;
+  private:
+  int _internal_q_foot_size() const;
+  public:
+  void clear_q_foot();
+  private:
+  float _internal_q_foot(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+      _internal_q_foot() const;
+  void _internal_add_q_foot(float value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+      _internal_mutable_q_foot();
+  public:
+  float q_foot(int index) const;
+  void set_q_foot(int index, float value);
+  void add_q_foot(float value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+      q_foot() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+      mutable_q_foot();
+
+  // repeated float qd_abad = 5;
   int qd_abad_size() const;
   private:
   int _internal_qd_abad_size() const;
@@ -293,7 +329,7 @@ class RobotState PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_qd_abad();
 
-  // repeated float qd_hip = 5;
+  // repeated float qd_hip = 6;
   int qd_hip_size() const;
   private:
   int _internal_qd_hip_size() const;
@@ -315,7 +351,7 @@ class RobotState PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_qd_hip();
 
-  // repeated float qd_knee = 6;
+  // repeated float qd_knee = 7;
   int qd_knee_size() const;
   private:
   int _internal_qd_knee_size() const;
@@ -337,29 +373,29 @@ class RobotState PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_qd_knee();
 
-  // repeated float omega_body = 7;
-  int omega_body_size() const;
+  // repeated float qd_foot = 8;
+  int qd_foot_size() const;
   private:
-  int _internal_omega_body_size() const;
+  int _internal_qd_foot_size() const;
   public:
-  void clear_omega_body();
+  void clear_qd_foot();
   private:
-  float _internal_omega_body(int index) const;
+  float _internal_qd_foot(int index) const;
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      _internal_omega_body() const;
-  void _internal_add_omega_body(float value);
+      _internal_qd_foot() const;
+  void _internal_add_qd_foot(float value);
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      _internal_mutable_omega_body();
+      _internal_mutable_qd_foot();
   public:
-  float omega_body(int index) const;
-  void set_omega_body(int index, float value);
-  void add_omega_body(float value);
+  float qd_foot(int index) const;
+  void set_qd_foot(int index, float value);
+  void add_qd_foot(float value);
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      omega_body() const;
+      qd_foot() const;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      mutable_omega_body();
+      mutable_qd_foot();
 
-  // repeated float tau_abad_fb = 8;
+  // repeated float tau_abad_fb = 9;
   int tau_abad_fb_size() const;
   private:
   int _internal_tau_abad_fb_size() const;
@@ -381,7 +417,7 @@ class RobotState PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_tau_abad_fb();
 
-  // repeated float tau_hip_fb = 9;
+  // repeated float tau_hip_fb = 10;
   int tau_hip_fb_size() const;
   private:
   int _internal_tau_hip_fb_size() const;
@@ -403,7 +439,7 @@ class RobotState PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_tau_hip_fb();
 
-  // repeated float tau_knee_fb = 10;
+  // repeated float tau_knee_fb = 11;
   int tau_knee_fb_size() const;
   private:
   int _internal_tau_knee_fb_size() const;
@@ -425,49 +461,27 @@ class RobotState PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_tau_knee_fb();
 
-  // repeated float position = 11;
-  int position_size() const;
+  // repeated float tau_foot_fb = 12;
+  int tau_foot_fb_size() const;
   private:
-  int _internal_position_size() const;
+  int _internal_tau_foot_fb_size() const;
   public:
-  void clear_position();
+  void clear_tau_foot_fb();
   private:
-  float _internal_position(int index) const;
+  float _internal_tau_foot_fb(int index) const;
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      _internal_position() const;
-  void _internal_add_position(float value);
+      _internal_tau_foot_fb() const;
+  void _internal_add_tau_foot_fb(float value);
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      _internal_mutable_position();
+      _internal_mutable_tau_foot_fb();
   public:
-  float position(int index) const;
-  void set_position(int index, float value);
-  void add_position(float value);
+  float tau_foot_fb(int index) const;
+  void set_tau_foot_fb(int index, float value);
+  void add_tau_foot_fb(float value);
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      position() const;
+      tau_foot_fb() const;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      mutable_position();
-
-  // repeated float tau_ff = 12;
-  int tau_ff_size() const;
-  private:
-  int _internal_tau_ff_size() const;
-  public:
-  void clear_tau_ff();
-  private:
-  float _internal_tau_ff(int index) const;
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      _internal_tau_ff() const;
-  void _internal_add_tau_ff(float value);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      _internal_mutable_tau_ff();
-  public:
-  float tau_ff(int index) const;
-  void set_tau_ff(int index, float value);
-  void add_tau_ff(float value);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      tau_ff() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      mutable_tau_ff();
+      mutable_tau_foot_fb();
 
   // repeated float quat = 13;
   int quat_size() const;
@@ -535,7 +549,7 @@ class RobotState PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_acc();
 
-  // repeated float rpy = 19;
+  // repeated float rpy = 16;
   int rpy_size() const;
   private:
   int _internal_rpy_size() const;
@@ -557,27 +571,71 @@ class RobotState PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_rpy();
 
-  // repeated float omega_world = 20;
-  int omega_world_size() const;
+  // repeated float depth = 18;
+  int depth_size() const;
   private:
-  int _internal_omega_world_size() const;
+  int _internal_depth_size() const;
   public:
-  void clear_omega_world();
+  void clear_depth();
   private:
-  float _internal_omega_world(int index) const;
+  float _internal_depth(int index) const;
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      _internal_omega_world() const;
-  void _internal_add_omega_world(float value);
+      _internal_depth() const;
+  void _internal_add_depth(float value);
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      _internal_mutable_omega_world();
+      _internal_mutable_depth();
   public:
-  float omega_world(int index) const;
-  void set_omega_world(int index, float value);
-  void add_omega_world(float value);
+  float depth(int index) const;
+  void set_depth(int index, float value);
+  void add_depth(float value);
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      omega_world() const;
+      depth() const;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      mutable_omega_world();
+      mutable_depth();
+
+  // repeated float position = 19;
+  int position_size() const;
+  private:
+  int _internal_position_size() const;
+  public:
+  void clear_position();
+  private:
+  float _internal_position(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+      _internal_position() const;
+  void _internal_add_position(float value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+      _internal_mutable_position();
+  public:
+  float position(int index) const;
+  void set_position(int index, float value);
+  void add_position(float value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+      position() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+      mutable_position();
+
+  // repeated float v_world = 20;
+  int v_world_size() const;
+  private:
+  int _internal_v_world_size() const;
+  public:
+  void clear_v_world();
+  private:
+  float _internal_v_world(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+      _internal_v_world() const;
+  void _internal_add_v_world(float value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+      _internal_mutable_v_world();
+  public:
+  float v_world(int index) const;
+  void set_v_world(int index, float value);
+  void add_v_world(float value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+      v_world() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+      mutable_v_world();
 
   // uint64 time_stamp = 17;
   void clear_time_stamp();
@@ -601,24 +659,24 @@ class RobotState PROTOBUF_FINAL :
   mutable std::atomic<int> _q_hip_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > q_knee_;
   mutable std::atomic<int> _q_knee_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > q_foot_;
+  mutable std::atomic<int> _q_foot_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > qd_abad_;
   mutable std::atomic<int> _qd_abad_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > qd_hip_;
   mutable std::atomic<int> _qd_hip_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > qd_knee_;
   mutable std::atomic<int> _qd_knee_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > omega_body_;
-  mutable std::atomic<int> _omega_body_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > qd_foot_;
+  mutable std::atomic<int> _qd_foot_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_abad_fb_;
   mutable std::atomic<int> _tau_abad_fb_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_hip_fb_;
   mutable std::atomic<int> _tau_hip_fb_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_knee_fb_;
   mutable std::atomic<int> _tau_knee_fb_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > position_;
-  mutable std::atomic<int> _position_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_ff_;
-  mutable std::atomic<int> _tau_ff_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_foot_fb_;
+  mutable std::atomic<int> _tau_foot_fb_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > quat_;
   mutable std::atomic<int> _quat_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > gyro_;
@@ -627,8 +685,12 @@ class RobotState PROTOBUF_FINAL :
   mutable std::atomic<int> _acc_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > rpy_;
   mutable std::atomic<int> _rpy_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > omega_world_;
-  mutable std::atomic<int> _omega_world_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > depth_;
+  mutable std::atomic<int> _depth_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > position_;
+  mutable std::atomic<int> _position_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > v_world_;
+  mutable std::atomic<int> _v_world_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::uint64 time_stamp_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_robot_5fsdk_2eproto;
@@ -751,22 +813,22 @@ class RobotCmd PROTOBUF_FINAL :
     kQDesAbadFieldNumber = 1,
     kQDesHipFieldNumber = 2,
     kQDesKneeFieldNumber = 3,
-    kQdDesAbadFieldNumber = 4,
-    kQdDesHipFieldNumber = 5,
-    kQdDesKneeFieldNumber = 6,
-    kTauAbadFfFieldNumber = 7,
-    kTauHipFfFieldNumber = 8,
+    kQDesFootFieldNumber = 4,
+    kQdDesAbadFieldNumber = 5,
+    kQdDesHipFieldNumber = 6,
+    kQdDesKneeFieldNumber = 7,
+    kQdDesFootFieldNumber = 8,
     kKpAbadFieldNumber = 9,
     kKpHipFieldNumber = 10,
     kKpKneeFieldNumber = 11,
-    kKdAbadFieldNumber = 12,
-    kKdHipFieldNumber = 13,
-    kKdKneeFieldNumber = 14,
-    kKpFootFieldNumber = 15,
+    kKpFootFieldNumber = 12,
+    kKdAbadFieldNumber = 13,
+    kKdHipFieldNumber = 14,
+    kKdKneeFieldNumber = 15,
     kKdFootFieldNumber = 16,
-    kQDesFootFieldNumber = 17,
-    kQdDesFootFieldNumber = 18,
-    kTauFootFbFieldNumber = 19,
+    kTauAbadFfFieldNumber = 17,
+    kTauHipFfFieldNumber = 18,
+    kTauKneeFfFieldNumber = 19,
     kTauFootFfFieldNumber = 20,
   };
   // repeated float q_des_abad = 1;
@@ -835,7 +897,29 @@ class RobotCmd PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_q_des_knee();
 
-  // repeated float qd_des_abad = 4;
+  // repeated float q_des_foot = 4;
+  int q_des_foot_size() const;
+  private:
+  int _internal_q_des_foot_size() const;
+  public:
+  void clear_q_des_foot();
+  private:
+  float _internal_q_des_foot(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+      _internal_q_des_foot() const;
+  void _internal_add_q_des_foot(float value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+      _internal_mutable_q_des_foot();
+  public:
+  float q_des_foot(int index) const;
+  void set_q_des_foot(int index, float value);
+  void add_q_des_foot(float value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+      q_des_foot() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+      mutable_q_des_foot();
+
+  // repeated float qd_des_abad = 5;
   int qd_des_abad_size() const;
   private:
   int _internal_qd_des_abad_size() const;
@@ -857,7 +941,7 @@ class RobotCmd PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_qd_des_abad();
 
-  // repeated float qd_des_hip = 5;
+  // repeated float qd_des_hip = 6;
   int qd_des_hip_size() const;
   private:
   int _internal_qd_des_hip_size() const;
@@ -879,7 +963,7 @@ class RobotCmd PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_qd_des_hip();
 
-  // repeated float qd_des_knee = 6;
+  // repeated float qd_des_knee = 7;
   int qd_des_knee_size() const;
   private:
   int _internal_qd_des_knee_size() const;
@@ -901,49 +985,27 @@ class RobotCmd PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_qd_des_knee();
 
-  // repeated float tau_abad_ff = 7;
-  int tau_abad_ff_size() const;
+  // repeated float qd_des_foot = 8;
+  int qd_des_foot_size() const;
   private:
-  int _internal_tau_abad_ff_size() const;
+  int _internal_qd_des_foot_size() const;
   public:
-  void clear_tau_abad_ff();
+  void clear_qd_des_foot();
   private:
-  float _internal_tau_abad_ff(int index) const;
+  float _internal_qd_des_foot(int index) const;
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      _internal_tau_abad_ff() const;
-  void _internal_add_tau_abad_ff(float value);
+      _internal_qd_des_foot() const;
+  void _internal_add_qd_des_foot(float value);
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      _internal_mutable_tau_abad_ff();
+      _internal_mutable_qd_des_foot();
   public:
-  float tau_abad_ff(int index) const;
-  void set_tau_abad_ff(int index, float value);
-  void add_tau_abad_ff(float value);
+  float qd_des_foot(int index) const;
+  void set_qd_des_foot(int index, float value);
+  void add_qd_des_foot(float value);
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      tau_abad_ff() const;
+      qd_des_foot() const;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      mutable_tau_abad_ff();
-
-  // repeated float tau_hip_ff = 8;
-  int tau_hip_ff_size() const;
-  private:
-  int _internal_tau_hip_ff_size() const;
-  public:
-  void clear_tau_hip_ff();
-  private:
-  float _internal_tau_hip_ff(int index) const;
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      _internal_tau_hip_ff() const;
-  void _internal_add_tau_hip_ff(float value);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      _internal_mutable_tau_hip_ff();
-  public:
-  float tau_hip_ff(int index) const;
-  void set_tau_hip_ff(int index, float value);
-  void add_tau_hip_ff(float value);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      tau_hip_ff() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      mutable_tau_hip_ff();
+      mutable_qd_des_foot();
 
   // repeated float kp_abad = 9;
   int kp_abad_size() const;
@@ -1011,7 +1073,29 @@ class RobotCmd PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_kp_knee();
 
-  // repeated float kd_abad = 12;
+  // repeated float kp_foot = 12;
+  int kp_foot_size() const;
+  private:
+  int _internal_kp_foot_size() const;
+  public:
+  void clear_kp_foot();
+  private:
+  float _internal_kp_foot(int index) const;
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+      _internal_kp_foot() const;
+  void _internal_add_kp_foot(float value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+      _internal_mutable_kp_foot();
+  public:
+  float kp_foot(int index) const;
+  void set_kp_foot(int index, float value);
+  void add_kp_foot(float value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+      kp_foot() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+      mutable_kp_foot();
+
+  // repeated float kd_abad = 13;
   int kd_abad_size() const;
   private:
   int _internal_kd_abad_size() const;
@@ -1033,7 +1117,7 @@ class RobotCmd PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_kd_abad();
 
-  // repeated float kd_hip = 13;
+  // repeated float kd_hip = 14;
   int kd_hip_size() const;
   private:
   int _internal_kd_hip_size() const;
@@ -1055,7 +1139,7 @@ class RobotCmd PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_kd_hip();
 
-  // repeated float kd_knee = 14;
+  // repeated float kd_knee = 15;
   int kd_knee_size() const;
   private:
   int _internal_kd_knee_size() const;
@@ -1076,28 +1160,6 @@ class RobotCmd PROTOBUF_FINAL :
       kd_knee() const;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_kd_knee();
-
-  // repeated float kp_foot = 15;
-  int kp_foot_size() const;
-  private:
-  int _internal_kp_foot_size() const;
-  public:
-  void clear_kp_foot();
-  private:
-  float _internal_kp_foot(int index) const;
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      _internal_kp_foot() const;
-  void _internal_add_kp_foot(float value);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      _internal_mutable_kp_foot();
-  public:
-  float kp_foot(int index) const;
-  void set_kp_foot(int index, float value);
-  void add_kp_foot(float value);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      kp_foot() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      mutable_kp_foot();
 
   // repeated float kd_foot = 16;
   int kd_foot_size() const;
@@ -1121,71 +1183,71 @@ class RobotCmd PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_kd_foot();
 
-  // repeated float q_des_foot = 17;
-  int q_des_foot_size() const;
+  // repeated float tau_abad_ff = 17;
+  int tau_abad_ff_size() const;
   private:
-  int _internal_q_des_foot_size() const;
+  int _internal_tau_abad_ff_size() const;
   public:
-  void clear_q_des_foot();
+  void clear_tau_abad_ff();
   private:
-  float _internal_q_des_foot(int index) const;
+  float _internal_tau_abad_ff(int index) const;
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      _internal_q_des_foot() const;
-  void _internal_add_q_des_foot(float value);
+      _internal_tau_abad_ff() const;
+  void _internal_add_tau_abad_ff(float value);
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      _internal_mutable_q_des_foot();
+      _internal_mutable_tau_abad_ff();
   public:
-  float q_des_foot(int index) const;
-  void set_q_des_foot(int index, float value);
-  void add_q_des_foot(float value);
+  float tau_abad_ff(int index) const;
+  void set_tau_abad_ff(int index, float value);
+  void add_tau_abad_ff(float value);
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      q_des_foot() const;
+      tau_abad_ff() const;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      mutable_q_des_foot();
+      mutable_tau_abad_ff();
 
-  // repeated float qd_des_foot = 18;
-  int qd_des_foot_size() const;
+  // repeated float tau_hip_ff = 18;
+  int tau_hip_ff_size() const;
   private:
-  int _internal_qd_des_foot_size() const;
+  int _internal_tau_hip_ff_size() const;
   public:
-  void clear_qd_des_foot();
+  void clear_tau_hip_ff();
   private:
-  float _internal_qd_des_foot(int index) const;
+  float _internal_tau_hip_ff(int index) const;
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      _internal_qd_des_foot() const;
-  void _internal_add_qd_des_foot(float value);
+      _internal_tau_hip_ff() const;
+  void _internal_add_tau_hip_ff(float value);
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      _internal_mutable_qd_des_foot();
+      _internal_mutable_tau_hip_ff();
   public:
-  float qd_des_foot(int index) const;
-  void set_qd_des_foot(int index, float value);
-  void add_qd_des_foot(float value);
+  float tau_hip_ff(int index) const;
+  void set_tau_hip_ff(int index, float value);
+  void add_tau_hip_ff(float value);
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      qd_des_foot() const;
+      tau_hip_ff() const;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      mutable_qd_des_foot();
+      mutable_tau_hip_ff();
 
-  // repeated float tau_foot_fb = 19;
-  int tau_foot_fb_size() const;
+  // repeated float tau_knee_ff = 19;
+  int tau_knee_ff_size() const;
   private:
-  int _internal_tau_foot_fb_size() const;
+  int _internal_tau_knee_ff_size() const;
   public:
-  void clear_tau_foot_fb();
+  void clear_tau_knee_ff();
   private:
-  float _internal_tau_foot_fb(int index) const;
+  float _internal_tau_knee_ff(int index) const;
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      _internal_tau_foot_fb() const;
-  void _internal_add_tau_foot_fb(float value);
+      _internal_tau_knee_ff() const;
+  void _internal_add_tau_knee_ff(float value);
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      _internal_mutable_tau_foot_fb();
+      _internal_mutable_tau_knee_ff();
   public:
-  float tau_foot_fb(int index) const;
-  void set_tau_foot_fb(int index, float value);
-  void add_tau_foot_fb(float value);
+  float tau_knee_ff(int index) const;
+  void set_tau_knee_ff(int index, float value);
+  void add_tau_knee_ff(float value);
   const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      tau_foot_fb() const;
+      tau_knee_ff() const;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      mutable_tau_foot_fb();
+      mutable_tau_knee_ff();
 
   // repeated float tau_foot_ff = 20;
   int tau_foot_ff_size() const;
@@ -1222,40 +1284,759 @@ class RobotCmd PROTOBUF_FINAL :
   mutable std::atomic<int> _q_des_hip_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > q_des_knee_;
   mutable std::atomic<int> _q_des_knee_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > q_des_foot_;
+  mutable std::atomic<int> _q_des_foot_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > qd_des_abad_;
   mutable std::atomic<int> _qd_des_abad_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > qd_des_hip_;
   mutable std::atomic<int> _qd_des_hip_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > qd_des_knee_;
   mutable std::atomic<int> _qd_des_knee_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_abad_ff_;
-  mutable std::atomic<int> _tau_abad_ff_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_hip_ff_;
-  mutable std::atomic<int> _tau_hip_ff_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > qd_des_foot_;
+  mutable std::atomic<int> _qd_des_foot_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > kp_abad_;
   mutable std::atomic<int> _kp_abad_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > kp_hip_;
   mutable std::atomic<int> _kp_hip_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > kp_knee_;
   mutable std::atomic<int> _kp_knee_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > kp_foot_;
+  mutable std::atomic<int> _kp_foot_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > kd_abad_;
   mutable std::atomic<int> _kd_abad_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > kd_hip_;
   mutable std::atomic<int> _kd_hip_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > kd_knee_;
   mutable std::atomic<int> _kd_knee_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > kp_foot_;
-  mutable std::atomic<int> _kp_foot_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > kd_foot_;
   mutable std::atomic<int> _kd_foot_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > q_des_foot_;
-  mutable std::atomic<int> _q_des_foot_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > qd_des_foot_;
-  mutable std::atomic<int> _qd_des_foot_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_foot_fb_;
-  mutable std::atomic<int> _tau_foot_fb_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_abad_ff_;
+  mutable std::atomic<int> _tau_abad_ff_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_hip_ff_;
+  mutable std::atomic<int> _tau_hip_ff_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_knee_ff_;
+  mutable std::atomic<int> _tau_knee_ff_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > tau_foot_ff_;
   mutable std::atomic<int> _tau_foot_ff_cached_byte_size_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_robot_5fsdk_2eproto;
+};
+// -------------------------------------------------------------------
+
+class HighLevelCmd PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:robot_sdk.pb.HighLevelCmd) */ {
+ public:
+  inline HighLevelCmd() : HighLevelCmd(nullptr) {};
+  virtual ~HighLevelCmd();
+
+  HighLevelCmd(const HighLevelCmd& from);
+  HighLevelCmd(HighLevelCmd&& from) noexcept
+    : HighLevelCmd() {
+    *this = ::std::move(from);
+  }
+
+  inline HighLevelCmd& operator=(const HighLevelCmd& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline HighLevelCmd& operator=(HighLevelCmd&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const HighLevelCmd& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const HighLevelCmd* internal_default_instance() {
+    return reinterpret_cast<const HighLevelCmd*>(
+               &_HighLevelCmd_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    2;
+
+  friend void swap(HighLevelCmd& a, HighLevelCmd& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(HighLevelCmd* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(HighLevelCmd* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline HighLevelCmd* New() const final {
+    return CreateMaybeMessage<HighLevelCmd>(nullptr);
+  }
+
+  HighLevelCmd* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<HighLevelCmd>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const HighLevelCmd& from);
+  void MergeFrom(const HighLevelCmd& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(HighLevelCmd* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "robot_sdk.pb.HighLevelCmd";
+  }
+  protected:
+  explicit HighLevelCmd(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_robot_5fsdk_2eproto);
+    return ::descriptor_table_robot_5fsdk_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kVxFieldNumber = 1,
+    kVyFieldNumber = 2,
+    kRollRateFieldNumber = 3,
+    kPitchRateFieldNumber = 4,
+    kYawRateFieldNumber = 5,
+    kHeightRateFieldNumber = 6,
+    kJumpTrigerFieldNumber = 7,
+    kBackflipTrigerFieldNumber = 8,
+    kTwoLegStandFieldNumber = 9,
+    kControlModeFieldNumber = 10,
+    kEnableControlModeFieldNumber = 11,
+  };
+  // float vx = 1;
+  void clear_vx();
+  float vx() const;
+  void set_vx(float value);
+  private:
+  float _internal_vx() const;
+  void _internal_set_vx(float value);
+  public:
+
+  // float vy = 2;
+  void clear_vy();
+  float vy() const;
+  void set_vy(float value);
+  private:
+  float _internal_vy() const;
+  void _internal_set_vy(float value);
+  public:
+
+  // float roll_rate = 3;
+  void clear_roll_rate();
+  float roll_rate() const;
+  void set_roll_rate(float value);
+  private:
+  float _internal_roll_rate() const;
+  void _internal_set_roll_rate(float value);
+  public:
+
+  // float pitch_rate = 4;
+  void clear_pitch_rate();
+  float pitch_rate() const;
+  void set_pitch_rate(float value);
+  private:
+  float _internal_pitch_rate() const;
+  void _internal_set_pitch_rate(float value);
+  public:
+
+  // float yaw_rate = 5;
+  void clear_yaw_rate();
+  float yaw_rate() const;
+  void set_yaw_rate(float value);
+  private:
+  float _internal_yaw_rate() const;
+  void _internal_set_yaw_rate(float value);
+  public:
+
+  // float height_rate = 6;
+  void clear_height_rate();
+  float height_rate() const;
+  void set_height_rate(float value);
+  private:
+  float _internal_height_rate() const;
+  void _internal_set_height_rate(float value);
+  public:
+
+  // uint32 jump_triger = 7;
+  void clear_jump_triger();
+  ::PROTOBUF_NAMESPACE_ID::uint32 jump_triger() const;
+  void set_jump_triger(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_jump_triger() const;
+  void _internal_set_jump_triger(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 backflip_triger = 8;
+  void clear_backflip_triger();
+  ::PROTOBUF_NAMESPACE_ID::uint32 backflip_triger() const;
+  void set_backflip_triger(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_backflip_triger() const;
+  void _internal_set_backflip_triger(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 two_leg_stand = 9;
+  void clear_two_leg_stand();
+  ::PROTOBUF_NAMESPACE_ID::uint32 two_leg_stand() const;
+  void set_two_leg_stand(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_two_leg_stand() const;
+  void _internal_set_two_leg_stand(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 control_mode = 10;
+  void clear_control_mode();
+  ::PROTOBUF_NAMESPACE_ID::uint32 control_mode() const;
+  void set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_control_mode() const;
+  void _internal_set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 enable_control_mode = 11;
+  void clear_enable_control_mode();
+  ::PROTOBUF_NAMESPACE_ID::uint32 enable_control_mode() const;
+  void set_enable_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_enable_control_mode() const;
+  void _internal_set_enable_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:robot_sdk.pb.HighLevelCmd)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  float vx_;
+  float vy_;
+  float roll_rate_;
+  float pitch_rate_;
+  float yaw_rate_;
+  float height_rate_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 jump_triger_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 backflip_triger_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 two_leg_stand_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 control_mode_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 enable_control_mode_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_robot_5fsdk_2eproto;
+};
+// -------------------------------------------------------------------
+
+class AppCmd PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:robot_sdk.pb.AppCmd) */ {
+ public:
+  inline AppCmd() : AppCmd(nullptr) {};
+  virtual ~AppCmd();
+
+  AppCmd(const AppCmd& from);
+  AppCmd(AppCmd&& from) noexcept
+    : AppCmd() {
+    *this = ::std::move(from);
+  }
+
+  inline AppCmd& operator=(const AppCmd& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline AppCmd& operator=(AppCmd&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const AppCmd& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const AppCmd* internal_default_instance() {
+    return reinterpret_cast<const AppCmd*>(
+               &_AppCmd_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    3;
+
+  friend void swap(AppCmd& a, AppCmd& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(AppCmd* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(AppCmd* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline AppCmd* New() const final {
+    return CreateMaybeMessage<AppCmd>(nullptr);
+  }
+
+  AppCmd* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<AppCmd>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const AppCmd& from);
+  void MergeFrom(const AppCmd& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(AppCmd* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "robot_sdk.pb.AppCmd";
+  }
+  protected:
+  explicit AppCmd(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_robot_5fsdk_2eproto);
+    return ::descriptor_table_robot_5fsdk_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kVxFieldNumber = 3,
+    kVyFieldNumber = 4,
+    kYawRateFieldNumber = 5,
+    kPitchRateFieldNumber = 6,
+    kLeftHeadFieldNumber = 7,
+    kRightHeadFieldNumber = 8,
+    kHighHeightFieldNumber = 9,
+    kLowHeightFieldNumber = 10,
+    kControlModeFieldNumber = 11,
+    kMotionModeFieldNumber = 12,
+    kTimeStampFieldNumber = 13,
+  };
+  // float vx = 3;
+  void clear_vx();
+  float vx() const;
+  void set_vx(float value);
+  private:
+  float _internal_vx() const;
+  void _internal_set_vx(float value);
+  public:
+
+  // float vy = 4;
+  void clear_vy();
+  float vy() const;
+  void set_vy(float value);
+  private:
+  float _internal_vy() const;
+  void _internal_set_vy(float value);
+  public:
+
+  // float yaw_rate = 5;
+  void clear_yaw_rate();
+  float yaw_rate() const;
+  void set_yaw_rate(float value);
+  private:
+  float _internal_yaw_rate() const;
+  void _internal_set_yaw_rate(float value);
+  public:
+
+  // float pitch_rate = 6;
+  void clear_pitch_rate();
+  float pitch_rate() const;
+  void set_pitch_rate(float value);
+  private:
+  float _internal_pitch_rate() const;
+  void _internal_set_pitch_rate(float value);
+  public:
+
+  // uint32 left_head = 7;
+  void clear_left_head();
+  ::PROTOBUF_NAMESPACE_ID::uint32 left_head() const;
+  void set_left_head(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_left_head() const;
+  void _internal_set_left_head(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 right_head = 8;
+  void clear_right_head();
+  ::PROTOBUF_NAMESPACE_ID::uint32 right_head() const;
+  void set_right_head(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_right_head() const;
+  void _internal_set_right_head(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 high_height = 9;
+  void clear_high_height();
+  ::PROTOBUF_NAMESPACE_ID::uint32 high_height() const;
+  void set_high_height(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_high_height() const;
+  void _internal_set_high_height(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 low_height = 10;
+  void clear_low_height();
+  ::PROTOBUF_NAMESPACE_ID::uint32 low_height() const;
+  void set_low_height(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_low_height() const;
+  void _internal_set_low_height(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 control_mode = 11;
+  void clear_control_mode();
+  ::PROTOBUF_NAMESPACE_ID::uint32 control_mode() const;
+  void set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_control_mode() const;
+  void _internal_set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 motion_mode = 12;
+  void clear_motion_mode();
+  ::PROTOBUF_NAMESPACE_ID::uint32 motion_mode() const;
+  void set_motion_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_motion_mode() const;
+  void _internal_set_motion_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint64 time_stamp = 13;
+  void clear_time_stamp();
+  ::PROTOBUF_NAMESPACE_ID::uint64 time_stamp() const;
+  void set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_time_stamp() const;
+  void _internal_set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:robot_sdk.pb.AppCmd)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  float vx_;
+  float vy_;
+  float yaw_rate_;
+  float pitch_rate_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 left_head_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 right_head_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 high_height_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 low_height_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 control_mode_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 motion_mode_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 time_stamp_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_robot_5fsdk_2eproto;
+};
+// -------------------------------------------------------------------
+
+class SDKCmd PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:robot_sdk.pb.SDKCmd) */ {
+ public:
+  inline SDKCmd() : SDKCmd(nullptr) {};
+  virtual ~SDKCmd();
+
+  SDKCmd(const SDKCmd& from);
+  SDKCmd(SDKCmd&& from) noexcept
+    : SDKCmd() {
+    *this = ::std::move(from);
+  }
+
+  inline SDKCmd& operator=(const SDKCmd& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline SDKCmd& operator=(SDKCmd&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const SDKCmd& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const SDKCmd* internal_default_instance() {
+    return reinterpret_cast<const SDKCmd*>(
+               &_SDKCmd_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    4;
+
+  friend void swap(SDKCmd& a, SDKCmd& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(SDKCmd* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(SDKCmd* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline SDKCmd* New() const final {
+    return CreateMaybeMessage<SDKCmd>(nullptr);
+  }
+
+  SDKCmd* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<SDKCmd>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const SDKCmd& from);
+  void MergeFrom(const SDKCmd& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(SDKCmd* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "robot_sdk.pb.SDKCmd";
+  }
+  protected:
+  explicit SDKCmd(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_robot_5fsdk_2eproto);
+    return ::descriptor_table_robot_5fsdk_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kVxFieldNumber = 3,
+    kVyFieldNumber = 4,
+    kVzFieldNumber = 5,
+    kYawRateFieldNumber = 6,
+    kPitchRateFieldNumber = 7,
+    kRollRateFieldNumber = 8,
+    kControlModeFieldNumber = 11,
+    kMotionModeFieldNumber = 12,
+    kTimeStampFieldNumber = 13,
+  };
+  // float vx = 3;
+  void clear_vx();
+  float vx() const;
+  void set_vx(float value);
+  private:
+  float _internal_vx() const;
+  void _internal_set_vx(float value);
+  public:
+
+  // float vy = 4;
+  void clear_vy();
+  float vy() const;
+  void set_vy(float value);
+  private:
+  float _internal_vy() const;
+  void _internal_set_vy(float value);
+  public:
+
+  // float vz = 5;
+  void clear_vz();
+  float vz() const;
+  void set_vz(float value);
+  private:
+  float _internal_vz() const;
+  void _internal_set_vz(float value);
+  public:
+
+  // float yaw_rate = 6;
+  void clear_yaw_rate();
+  float yaw_rate() const;
+  void set_yaw_rate(float value);
+  private:
+  float _internal_yaw_rate() const;
+  void _internal_set_yaw_rate(float value);
+  public:
+
+  // float pitch_rate = 7;
+  void clear_pitch_rate();
+  float pitch_rate() const;
+  void set_pitch_rate(float value);
+  private:
+  float _internal_pitch_rate() const;
+  void _internal_set_pitch_rate(float value);
+  public:
+
+  // float roll_rate = 8;
+  void clear_roll_rate();
+  float roll_rate() const;
+  void set_roll_rate(float value);
+  private:
+  float _internal_roll_rate() const;
+  void _internal_set_roll_rate(float value);
+  public:
+
+  // uint32 control_mode = 11;
+  void clear_control_mode();
+  ::PROTOBUF_NAMESPACE_ID::uint32 control_mode() const;
+  void set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_control_mode() const;
+  void _internal_set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 motion_mode = 12;
+  void clear_motion_mode();
+  ::PROTOBUF_NAMESPACE_ID::uint32 motion_mode() const;
+  void set_motion_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_motion_mode() const;
+  void _internal_set_motion_mode(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint64 time_stamp = 13;
+  void clear_time_stamp();
+  ::PROTOBUF_NAMESPACE_ID::uint64 time_stamp() const;
+  void set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_time_stamp() const;
+  void _internal_set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:robot_sdk.pb.SDKCmd)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  float vx_;
+  float vy_;
+  float vz_;
+  float yaw_rate_;
+  float pitch_rate_;
+  float roll_rate_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 control_mode_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 motion_mode_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 time_stamp_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_robot_5fsdk_2eproto;
 };
@@ -1411,7 +2192,54 @@ RobotState::mutable_q_knee() {
   return _internal_mutable_q_knee();
 }
 
-// repeated float qd_abad = 4;
+// repeated float q_foot = 4;
+inline int RobotState::_internal_q_foot_size() const {
+  return q_foot_.size();
+}
+inline int RobotState::q_foot_size() const {
+  return _internal_q_foot_size();
+}
+inline void RobotState::clear_q_foot() {
+  q_foot_.Clear();
+}
+inline float RobotState::_internal_q_foot(int index) const {
+  return q_foot_.Get(index);
+}
+inline float RobotState::q_foot(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.q_foot)
+  return _internal_q_foot(index);
+}
+inline void RobotState::set_q_foot(int index, float value) {
+  q_foot_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.q_foot)
+}
+inline void RobotState::_internal_add_q_foot(float value) {
+  q_foot_.Add(value);
+}
+inline void RobotState::add_q_foot(float value) {
+  _internal_add_q_foot(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotState.q_foot)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotState::_internal_q_foot() const {
+  return q_foot_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotState::q_foot() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotState.q_foot)
+  return _internal_q_foot();
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+RobotState::_internal_mutable_q_foot() {
+  return &q_foot_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+RobotState::mutable_q_foot() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotState.q_foot)
+  return _internal_mutable_q_foot();
+}
+
+// repeated float qd_abad = 5;
 inline int RobotState::_internal_qd_abad_size() const {
   return qd_abad_.size();
 }
@@ -1458,7 +2286,7 @@ RobotState::mutable_qd_abad() {
   return _internal_mutable_qd_abad();
 }
 
-// repeated float qd_hip = 5;
+// repeated float qd_hip = 6;
 inline int RobotState::_internal_qd_hip_size() const {
   return qd_hip_.size();
 }
@@ -1505,7 +2333,7 @@ RobotState::mutable_qd_hip() {
   return _internal_mutable_qd_hip();
 }
 
-// repeated float qd_knee = 6;
+// repeated float qd_knee = 7;
 inline int RobotState::_internal_qd_knee_size() const {
   return qd_knee_.size();
 }
@@ -1552,54 +2380,54 @@ RobotState::mutable_qd_knee() {
   return _internal_mutable_qd_knee();
 }
 
-// repeated float omega_body = 7;
-inline int RobotState::_internal_omega_body_size() const {
-  return omega_body_.size();
+// repeated float qd_foot = 8;
+inline int RobotState::_internal_qd_foot_size() const {
+  return qd_foot_.size();
 }
-inline int RobotState::omega_body_size() const {
-  return _internal_omega_body_size();
+inline int RobotState::qd_foot_size() const {
+  return _internal_qd_foot_size();
 }
-inline void RobotState::clear_omega_body() {
-  omega_body_.Clear();
+inline void RobotState::clear_qd_foot() {
+  qd_foot_.Clear();
 }
-inline float RobotState::_internal_omega_body(int index) const {
-  return omega_body_.Get(index);
+inline float RobotState::_internal_qd_foot(int index) const {
+  return qd_foot_.Get(index);
 }
-inline float RobotState::omega_body(int index) const {
-  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.omega_body)
-  return _internal_omega_body(index);
+inline float RobotState::qd_foot(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.qd_foot)
+  return _internal_qd_foot(index);
 }
-inline void RobotState::set_omega_body(int index, float value) {
-  omega_body_.Set(index, value);
-  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.omega_body)
+inline void RobotState::set_qd_foot(int index, float value) {
+  qd_foot_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.qd_foot)
 }
-inline void RobotState::_internal_add_omega_body(float value) {
-  omega_body_.Add(value);
+inline void RobotState::_internal_add_qd_foot(float value) {
+  qd_foot_.Add(value);
 }
-inline void RobotState::add_omega_body(float value) {
-  _internal_add_omega_body(value);
-  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotState.omega_body)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotState::_internal_omega_body() const {
-  return omega_body_;
+inline void RobotState::add_qd_foot(float value) {
+  _internal_add_qd_foot(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotState.qd_foot)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotState::omega_body() const {
-  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotState.omega_body)
-  return _internal_omega_body();
+RobotState::_internal_qd_foot() const {
+  return qd_foot_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotState::qd_foot() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotState.qd_foot)
+  return _internal_qd_foot();
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotState::_internal_mutable_omega_body() {
-  return &omega_body_;
+RobotState::_internal_mutable_qd_foot() {
+  return &qd_foot_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotState::mutable_omega_body() {
-  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotState.omega_body)
-  return _internal_mutable_omega_body();
+RobotState::mutable_qd_foot() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotState.qd_foot)
+  return _internal_mutable_qd_foot();
 }
 
-// repeated float tau_abad_fb = 8;
+// repeated float tau_abad_fb = 9;
 inline int RobotState::_internal_tau_abad_fb_size() const {
   return tau_abad_fb_.size();
 }
@@ -1646,7 +2474,7 @@ RobotState::mutable_tau_abad_fb() {
   return _internal_mutable_tau_abad_fb();
 }
 
-// repeated float tau_hip_fb = 9;
+// repeated float tau_hip_fb = 10;
 inline int RobotState::_internal_tau_hip_fb_size() const {
   return tau_hip_fb_.size();
 }
@@ -1693,7 +2521,7 @@ RobotState::mutable_tau_hip_fb() {
   return _internal_mutable_tau_hip_fb();
 }
 
-// repeated float tau_knee_fb = 10;
+// repeated float tau_knee_fb = 11;
 inline int RobotState::_internal_tau_knee_fb_size() const {
   return tau_knee_fb_.size();
 }
@@ -1740,98 +2568,51 @@ RobotState::mutable_tau_knee_fb() {
   return _internal_mutable_tau_knee_fb();
 }
 
-// repeated float position = 11;
-inline int RobotState::_internal_position_size() const {
-  return position_.size();
+// repeated float tau_foot_fb = 12;
+inline int RobotState::_internal_tau_foot_fb_size() const {
+  return tau_foot_fb_.size();
 }
-inline int RobotState::position_size() const {
-  return _internal_position_size();
+inline int RobotState::tau_foot_fb_size() const {
+  return _internal_tau_foot_fb_size();
 }
-inline void RobotState::clear_position() {
-  position_.Clear();
+inline void RobotState::clear_tau_foot_fb() {
+  tau_foot_fb_.Clear();
 }
-inline float RobotState::_internal_position(int index) const {
-  return position_.Get(index);
+inline float RobotState::_internal_tau_foot_fb(int index) const {
+  return tau_foot_fb_.Get(index);
 }
-inline float RobotState::position(int index) const {
-  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.position)
-  return _internal_position(index);
+inline float RobotState::tau_foot_fb(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.tau_foot_fb)
+  return _internal_tau_foot_fb(index);
 }
-inline void RobotState::set_position(int index, float value) {
-  position_.Set(index, value);
-  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.position)
+inline void RobotState::set_tau_foot_fb(int index, float value) {
+  tau_foot_fb_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.tau_foot_fb)
 }
-inline void RobotState::_internal_add_position(float value) {
-  position_.Add(value);
+inline void RobotState::_internal_add_tau_foot_fb(float value) {
+  tau_foot_fb_.Add(value);
 }
-inline void RobotState::add_position(float value) {
-  _internal_add_position(value);
-  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotState.position)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotState::_internal_position() const {
-  return position_;
+inline void RobotState::add_tau_foot_fb(float value) {
+  _internal_add_tau_foot_fb(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotState.tau_foot_fb)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotState::position() const {
-  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotState.position)
-  return _internal_position();
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotState::_internal_mutable_position() {
-  return &position_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotState::mutable_position() {
-  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotState.position)
-  return _internal_mutable_position();
-}
-
-// repeated float tau_ff = 12;
-inline int RobotState::_internal_tau_ff_size() const {
-  return tau_ff_.size();
-}
-inline int RobotState::tau_ff_size() const {
-  return _internal_tau_ff_size();
-}
-inline void RobotState::clear_tau_ff() {
-  tau_ff_.Clear();
-}
-inline float RobotState::_internal_tau_ff(int index) const {
-  return tau_ff_.Get(index);
-}
-inline float RobotState::tau_ff(int index) const {
-  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.tau_ff)
-  return _internal_tau_ff(index);
-}
-inline void RobotState::set_tau_ff(int index, float value) {
-  tau_ff_.Set(index, value);
-  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.tau_ff)
-}
-inline void RobotState::_internal_add_tau_ff(float value) {
-  tau_ff_.Add(value);
-}
-inline void RobotState::add_tau_ff(float value) {
-  _internal_add_tau_ff(value);
-  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotState.tau_ff)
+RobotState::_internal_tau_foot_fb() const {
+  return tau_foot_fb_;
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotState::_internal_tau_ff() const {
-  return tau_ff_;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotState::tau_ff() const {
-  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotState.tau_ff)
-  return _internal_tau_ff();
+RobotState::tau_foot_fb() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotState.tau_foot_fb)
+  return _internal_tau_foot_fb();
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotState::_internal_mutable_tau_ff() {
-  return &tau_ff_;
+RobotState::_internal_mutable_tau_foot_fb() {
+  return &tau_foot_fb_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotState::mutable_tau_ff() {
-  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotState.tau_ff)
-  return _internal_mutable_tau_ff();
+RobotState::mutable_tau_foot_fb() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotState.tau_foot_fb)
+  return _internal_mutable_tau_foot_fb();
 }
 
 // repeated float quat = 13;
@@ -1975,27 +2756,7 @@ RobotState::mutable_acc() {
   return _internal_mutable_acc();
 }
 
-// uint64 time_stamp = 17;
-inline void RobotState::clear_time_stamp() {
-  time_stamp_ = PROTOBUF_ULONGLONG(0);
-}
-inline ::PROTOBUF_NAMESPACE_ID::uint64 RobotState::_internal_time_stamp() const {
-  return time_stamp_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::uint64 RobotState::time_stamp() const {
-  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.time_stamp)
-  return _internal_time_stamp();
-}
-inline void RobotState::_internal_set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  
-  time_stamp_ = value;
-}
-inline void RobotState::set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_time_stamp(value);
-  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.time_stamp)
-}
-
-// repeated float rpy = 19;
+// repeated float rpy = 16;
 inline int RobotState::_internal_rpy_size() const {
   return rpy_.size();
 }
@@ -2042,51 +2803,165 @@ RobotState::mutable_rpy() {
   return _internal_mutable_rpy();
 }
 
-// repeated float omega_world = 20;
-inline int RobotState::_internal_omega_world_size() const {
-  return omega_world_.size();
+// uint64 time_stamp = 17;
+inline void RobotState::clear_time_stamp() {
+  time_stamp_ = PROTOBUF_ULONGLONG(0);
 }
-inline int RobotState::omega_world_size() const {
-  return _internal_omega_world_size();
+inline ::PROTOBUF_NAMESPACE_ID::uint64 RobotState::_internal_time_stamp() const {
+  return time_stamp_;
 }
-inline void RobotState::clear_omega_world() {
-  omega_world_.Clear();
+inline ::PROTOBUF_NAMESPACE_ID::uint64 RobotState::time_stamp() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.time_stamp)
+  return _internal_time_stamp();
 }
-inline float RobotState::_internal_omega_world(int index) const {
-  return omega_world_.Get(index);
+inline void RobotState::_internal_set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  time_stamp_ = value;
 }
-inline float RobotState::omega_world(int index) const {
-  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.omega_world)
-  return _internal_omega_world(index);
+inline void RobotState::set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_time_stamp(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.time_stamp)
 }
-inline void RobotState::set_omega_world(int index, float value) {
-  omega_world_.Set(index, value);
-  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.omega_world)
+
+// repeated float depth = 18;
+inline int RobotState::_internal_depth_size() const {
+  return depth_.size();
 }
-inline void RobotState::_internal_add_omega_world(float value) {
-  omega_world_.Add(value);
+inline int RobotState::depth_size() const {
+  return _internal_depth_size();
 }
-inline void RobotState::add_omega_world(float value) {
-  _internal_add_omega_world(value);
-  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotState.omega_world)
+inline void RobotState::clear_depth() {
+  depth_.Clear();
+}
+inline float RobotState::_internal_depth(int index) const {
+  return depth_.Get(index);
+}
+inline float RobotState::depth(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.depth)
+  return _internal_depth(index);
+}
+inline void RobotState::set_depth(int index, float value) {
+  depth_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.depth)
+}
+inline void RobotState::_internal_add_depth(float value) {
+  depth_.Add(value);
+}
+inline void RobotState::add_depth(float value) {
+  _internal_add_depth(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotState.depth)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotState::_internal_omega_world() const {
-  return omega_world_;
+RobotState::_internal_depth() const {
+  return depth_;
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotState::omega_world() const {
-  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotState.omega_world)
-  return _internal_omega_world();
+RobotState::depth() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotState.depth)
+  return _internal_depth();
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotState::_internal_mutable_omega_world() {
-  return &omega_world_;
+RobotState::_internal_mutable_depth() {
+  return &depth_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotState::mutable_omega_world() {
-  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotState.omega_world)
-  return _internal_mutable_omega_world();
+RobotState::mutable_depth() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotState.depth)
+  return _internal_mutable_depth();
+}
+
+// repeated float position = 19;
+inline int RobotState::_internal_position_size() const {
+  return position_.size();
+}
+inline int RobotState::position_size() const {
+  return _internal_position_size();
+}
+inline void RobotState::clear_position() {
+  position_.Clear();
+}
+inline float RobotState::_internal_position(int index) const {
+  return position_.Get(index);
+}
+inline float RobotState::position(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.position)
+  return _internal_position(index);
+}
+inline void RobotState::set_position(int index, float value) {
+  position_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.position)
+}
+inline void RobotState::_internal_add_position(float value) {
+  position_.Add(value);
+}
+inline void RobotState::add_position(float value) {
+  _internal_add_position(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotState.position)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotState::_internal_position() const {
+  return position_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotState::position() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotState.position)
+  return _internal_position();
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+RobotState::_internal_mutable_position() {
+  return &position_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+RobotState::mutable_position() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotState.position)
+  return _internal_mutable_position();
+}
+
+// repeated float v_world = 20;
+inline int RobotState::_internal_v_world_size() const {
+  return v_world_.size();
+}
+inline int RobotState::v_world_size() const {
+  return _internal_v_world_size();
+}
+inline void RobotState::clear_v_world() {
+  v_world_.Clear();
+}
+inline float RobotState::_internal_v_world(int index) const {
+  return v_world_.Get(index);
+}
+inline float RobotState::v_world(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotState.v_world)
+  return _internal_v_world(index);
+}
+inline void RobotState::set_v_world(int index, float value) {
+  v_world_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotState.v_world)
+}
+inline void RobotState::_internal_add_v_world(float value) {
+  v_world_.Add(value);
+}
+inline void RobotState::add_v_world(float value) {
+  _internal_add_v_world(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotState.v_world)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotState::_internal_v_world() const {
+  return v_world_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotState::v_world() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotState.v_world)
+  return _internal_v_world();
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+RobotState::_internal_mutable_v_world() {
+  return &v_world_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+RobotState::mutable_v_world() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotState.v_world)
+  return _internal_mutable_v_world();
 }
 
 // -------------------------------------------------------------------
@@ -2234,7 +3109,54 @@ RobotCmd::mutable_q_des_knee() {
   return _internal_mutable_q_des_knee();
 }
 
-// repeated float qd_des_abad = 4;
+// repeated float q_des_foot = 4;
+inline int RobotCmd::_internal_q_des_foot_size() const {
+  return q_des_foot_.size();
+}
+inline int RobotCmd::q_des_foot_size() const {
+  return _internal_q_des_foot_size();
+}
+inline void RobotCmd::clear_q_des_foot() {
+  q_des_foot_.Clear();
+}
+inline float RobotCmd::_internal_q_des_foot(int index) const {
+  return q_des_foot_.Get(index);
+}
+inline float RobotCmd::q_des_foot(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.q_des_foot)
+  return _internal_q_des_foot(index);
+}
+inline void RobotCmd::set_q_des_foot(int index, float value) {
+  q_des_foot_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.q_des_foot)
+}
+inline void RobotCmd::_internal_add_q_des_foot(float value) {
+  q_des_foot_.Add(value);
+}
+inline void RobotCmd::add_q_des_foot(float value) {
+  _internal_add_q_des_foot(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.q_des_foot)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotCmd::_internal_q_des_foot() const {
+  return q_des_foot_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotCmd::q_des_foot() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.q_des_foot)
+  return _internal_q_des_foot();
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+RobotCmd::_internal_mutable_q_des_foot() {
+  return &q_des_foot_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+RobotCmd::mutable_q_des_foot() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.q_des_foot)
+  return _internal_mutable_q_des_foot();
+}
+
+// repeated float qd_des_abad = 5;
 inline int RobotCmd::_internal_qd_des_abad_size() const {
   return qd_des_abad_.size();
 }
@@ -2281,7 +3203,7 @@ RobotCmd::mutable_qd_des_abad() {
   return _internal_mutable_qd_des_abad();
 }
 
-// repeated float qd_des_hip = 5;
+// repeated float qd_des_hip = 6;
 inline int RobotCmd::_internal_qd_des_hip_size() const {
   return qd_des_hip_.size();
 }
@@ -2328,7 +3250,7 @@ RobotCmd::mutable_qd_des_hip() {
   return _internal_mutable_qd_des_hip();
 }
 
-// repeated float qd_des_knee = 6;
+// repeated float qd_des_knee = 7;
 inline int RobotCmd::_internal_qd_des_knee_size() const {
   return qd_des_knee_.size();
 }
@@ -2375,98 +3297,51 @@ RobotCmd::mutable_qd_des_knee() {
   return _internal_mutable_qd_des_knee();
 }
 
-// repeated float tau_abad_ff = 7;
-inline int RobotCmd::_internal_tau_abad_ff_size() const {
-  return tau_abad_ff_.size();
+// repeated float qd_des_foot = 8;
+inline int RobotCmd::_internal_qd_des_foot_size() const {
+  return qd_des_foot_.size();
 }
-inline int RobotCmd::tau_abad_ff_size() const {
-  return _internal_tau_abad_ff_size();
+inline int RobotCmd::qd_des_foot_size() const {
+  return _internal_qd_des_foot_size();
 }
-inline void RobotCmd::clear_tau_abad_ff() {
-  tau_abad_ff_.Clear();
+inline void RobotCmd::clear_qd_des_foot() {
+  qd_des_foot_.Clear();
 }
-inline float RobotCmd::_internal_tau_abad_ff(int index) const {
-  return tau_abad_ff_.Get(index);
+inline float RobotCmd::_internal_qd_des_foot(int index) const {
+  return qd_des_foot_.Get(index);
 }
-inline float RobotCmd::tau_abad_ff(int index) const {
-  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.tau_abad_ff)
-  return _internal_tau_abad_ff(index);
+inline float RobotCmd::qd_des_foot(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.qd_des_foot)
+  return _internal_qd_des_foot(index);
 }
-inline void RobotCmd::set_tau_abad_ff(int index, float value) {
-  tau_abad_ff_.Set(index, value);
-  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.tau_abad_ff)
+inline void RobotCmd::set_qd_des_foot(int index, float value) {
+  qd_des_foot_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.qd_des_foot)
 }
-inline void RobotCmd::_internal_add_tau_abad_ff(float value) {
-  tau_abad_ff_.Add(value);
+inline void RobotCmd::_internal_add_qd_des_foot(float value) {
+  qd_des_foot_.Add(value);
 }
-inline void RobotCmd::add_tau_abad_ff(float value) {
-  _internal_add_tau_abad_ff(value);
-  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.tau_abad_ff)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::_internal_tau_abad_ff() const {
-  return tau_abad_ff_;
+inline void RobotCmd::add_qd_des_foot(float value) {
+  _internal_add_qd_des_foot(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.qd_des_foot)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::tau_abad_ff() const {
-  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.tau_abad_ff)
-  return _internal_tau_abad_ff();
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::_internal_mutable_tau_abad_ff() {
-  return &tau_abad_ff_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::mutable_tau_abad_ff() {
-  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.tau_abad_ff)
-  return _internal_mutable_tau_abad_ff();
-}
-
-// repeated float tau_hip_ff = 8;
-inline int RobotCmd::_internal_tau_hip_ff_size() const {
-  return tau_hip_ff_.size();
-}
-inline int RobotCmd::tau_hip_ff_size() const {
-  return _internal_tau_hip_ff_size();
-}
-inline void RobotCmd::clear_tau_hip_ff() {
-  tau_hip_ff_.Clear();
-}
-inline float RobotCmd::_internal_tau_hip_ff(int index) const {
-  return tau_hip_ff_.Get(index);
-}
-inline float RobotCmd::tau_hip_ff(int index) const {
-  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.tau_hip_ff)
-  return _internal_tau_hip_ff(index);
-}
-inline void RobotCmd::set_tau_hip_ff(int index, float value) {
-  tau_hip_ff_.Set(index, value);
-  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.tau_hip_ff)
-}
-inline void RobotCmd::_internal_add_tau_hip_ff(float value) {
-  tau_hip_ff_.Add(value);
-}
-inline void RobotCmd::add_tau_hip_ff(float value) {
-  _internal_add_tau_hip_ff(value);
-  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.tau_hip_ff)
+RobotCmd::_internal_qd_des_foot() const {
+  return qd_des_foot_;
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::_internal_tau_hip_ff() const {
-  return tau_hip_ff_;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::tau_hip_ff() const {
-  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.tau_hip_ff)
-  return _internal_tau_hip_ff();
+RobotCmd::qd_des_foot() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.qd_des_foot)
+  return _internal_qd_des_foot();
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::_internal_mutable_tau_hip_ff() {
-  return &tau_hip_ff_;
+RobotCmd::_internal_mutable_qd_des_foot() {
+  return &qd_des_foot_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::mutable_tau_hip_ff() {
-  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.tau_hip_ff)
-  return _internal_mutable_tau_hip_ff();
+RobotCmd::mutable_qd_des_foot() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.qd_des_foot)
+  return _internal_mutable_qd_des_foot();
 }
 
 // repeated float kp_abad = 9;
@@ -2610,7 +3485,54 @@ RobotCmd::mutable_kp_knee() {
   return _internal_mutable_kp_knee();
 }
 
-// repeated float kd_abad = 12;
+// repeated float kp_foot = 12;
+inline int RobotCmd::_internal_kp_foot_size() const {
+  return kp_foot_.size();
+}
+inline int RobotCmd::kp_foot_size() const {
+  return _internal_kp_foot_size();
+}
+inline void RobotCmd::clear_kp_foot() {
+  kp_foot_.Clear();
+}
+inline float RobotCmd::_internal_kp_foot(int index) const {
+  return kp_foot_.Get(index);
+}
+inline float RobotCmd::kp_foot(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.kp_foot)
+  return _internal_kp_foot(index);
+}
+inline void RobotCmd::set_kp_foot(int index, float value) {
+  kp_foot_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.kp_foot)
+}
+inline void RobotCmd::_internal_add_kp_foot(float value) {
+  kp_foot_.Add(value);
+}
+inline void RobotCmd::add_kp_foot(float value) {
+  _internal_add_kp_foot(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.kp_foot)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotCmd::_internal_kp_foot() const {
+  return kp_foot_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotCmd::kp_foot() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.kp_foot)
+  return _internal_kp_foot();
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+RobotCmd::_internal_mutable_kp_foot() {
+  return &kp_foot_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
+RobotCmd::mutable_kp_foot() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.kp_foot)
+  return _internal_mutable_kp_foot();
+}
+
+// repeated float kd_abad = 13;
 inline int RobotCmd::_internal_kd_abad_size() const {
   return kd_abad_.size();
 }
@@ -2657,7 +3579,7 @@ RobotCmd::mutable_kd_abad() {
   return _internal_mutable_kd_abad();
 }
 
-// repeated float kd_hip = 13;
+// repeated float kd_hip = 14;
 inline int RobotCmd::_internal_kd_hip_size() const {
   return kd_hip_.size();
 }
@@ -2704,7 +3626,7 @@ RobotCmd::mutable_kd_hip() {
   return _internal_mutable_kd_hip();
 }
 
-// repeated float kd_knee = 14;
+// repeated float kd_knee = 15;
 inline int RobotCmd::_internal_kd_knee_size() const {
   return kd_knee_.size();
 }
@@ -2749,53 +3671,6 @@ inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
 RobotCmd::mutable_kd_knee() {
   // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.kd_knee)
   return _internal_mutable_kd_knee();
-}
-
-// repeated float kp_foot = 15;
-inline int RobotCmd::_internal_kp_foot_size() const {
-  return kp_foot_.size();
-}
-inline int RobotCmd::kp_foot_size() const {
-  return _internal_kp_foot_size();
-}
-inline void RobotCmd::clear_kp_foot() {
-  kp_foot_.Clear();
-}
-inline float RobotCmd::_internal_kp_foot(int index) const {
-  return kp_foot_.Get(index);
-}
-inline float RobotCmd::kp_foot(int index) const {
-  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.kp_foot)
-  return _internal_kp_foot(index);
-}
-inline void RobotCmd::set_kp_foot(int index, float value) {
-  kp_foot_.Set(index, value);
-  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.kp_foot)
-}
-inline void RobotCmd::_internal_add_kp_foot(float value) {
-  kp_foot_.Add(value);
-}
-inline void RobotCmd::add_kp_foot(float value) {
-  _internal_add_kp_foot(value);
-  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.kp_foot)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::_internal_kp_foot() const {
-  return kp_foot_;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::kp_foot() const {
-  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.kp_foot)
-  return _internal_kp_foot();
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::_internal_mutable_kp_foot() {
-  return &kp_foot_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::mutable_kp_foot() {
-  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.kp_foot)
-  return _internal_mutable_kp_foot();
 }
 
 // repeated float kd_foot = 16;
@@ -2845,145 +3720,145 @@ RobotCmd::mutable_kd_foot() {
   return _internal_mutable_kd_foot();
 }
 
-// repeated float q_des_foot = 17;
-inline int RobotCmd::_internal_q_des_foot_size() const {
-  return q_des_foot_.size();
+// repeated float tau_abad_ff = 17;
+inline int RobotCmd::_internal_tau_abad_ff_size() const {
+  return tau_abad_ff_.size();
 }
-inline int RobotCmd::q_des_foot_size() const {
-  return _internal_q_des_foot_size();
+inline int RobotCmd::tau_abad_ff_size() const {
+  return _internal_tau_abad_ff_size();
 }
-inline void RobotCmd::clear_q_des_foot() {
-  q_des_foot_.Clear();
+inline void RobotCmd::clear_tau_abad_ff() {
+  tau_abad_ff_.Clear();
 }
-inline float RobotCmd::_internal_q_des_foot(int index) const {
-  return q_des_foot_.Get(index);
+inline float RobotCmd::_internal_tau_abad_ff(int index) const {
+  return tau_abad_ff_.Get(index);
 }
-inline float RobotCmd::q_des_foot(int index) const {
-  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.q_des_foot)
-  return _internal_q_des_foot(index);
+inline float RobotCmd::tau_abad_ff(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.tau_abad_ff)
+  return _internal_tau_abad_ff(index);
 }
-inline void RobotCmd::set_q_des_foot(int index, float value) {
-  q_des_foot_.Set(index, value);
-  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.q_des_foot)
+inline void RobotCmd::set_tau_abad_ff(int index, float value) {
+  tau_abad_ff_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.tau_abad_ff)
 }
-inline void RobotCmd::_internal_add_q_des_foot(float value) {
-  q_des_foot_.Add(value);
+inline void RobotCmd::_internal_add_tau_abad_ff(float value) {
+  tau_abad_ff_.Add(value);
 }
-inline void RobotCmd::add_q_des_foot(float value) {
-  _internal_add_q_des_foot(value);
-  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.q_des_foot)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::_internal_q_des_foot() const {
-  return q_des_foot_;
+inline void RobotCmd::add_tau_abad_ff(float value) {
+  _internal_add_tau_abad_ff(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.tau_abad_ff)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::q_des_foot() const {
-  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.q_des_foot)
-  return _internal_q_des_foot();
+RobotCmd::_internal_tau_abad_ff() const {
+  return tau_abad_ff_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotCmd::tau_abad_ff() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.tau_abad_ff)
+  return _internal_tau_abad_ff();
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::_internal_mutable_q_des_foot() {
-  return &q_des_foot_;
+RobotCmd::_internal_mutable_tau_abad_ff() {
+  return &tau_abad_ff_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::mutable_q_des_foot() {
-  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.q_des_foot)
-  return _internal_mutable_q_des_foot();
+RobotCmd::mutable_tau_abad_ff() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.tau_abad_ff)
+  return _internal_mutable_tau_abad_ff();
 }
 
-// repeated float qd_des_foot = 18;
-inline int RobotCmd::_internal_qd_des_foot_size() const {
-  return qd_des_foot_.size();
+// repeated float tau_hip_ff = 18;
+inline int RobotCmd::_internal_tau_hip_ff_size() const {
+  return tau_hip_ff_.size();
 }
-inline int RobotCmd::qd_des_foot_size() const {
-  return _internal_qd_des_foot_size();
+inline int RobotCmd::tau_hip_ff_size() const {
+  return _internal_tau_hip_ff_size();
 }
-inline void RobotCmd::clear_qd_des_foot() {
-  qd_des_foot_.Clear();
+inline void RobotCmd::clear_tau_hip_ff() {
+  tau_hip_ff_.Clear();
 }
-inline float RobotCmd::_internal_qd_des_foot(int index) const {
-  return qd_des_foot_.Get(index);
+inline float RobotCmd::_internal_tau_hip_ff(int index) const {
+  return tau_hip_ff_.Get(index);
 }
-inline float RobotCmd::qd_des_foot(int index) const {
-  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.qd_des_foot)
-  return _internal_qd_des_foot(index);
+inline float RobotCmd::tau_hip_ff(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.tau_hip_ff)
+  return _internal_tau_hip_ff(index);
 }
-inline void RobotCmd::set_qd_des_foot(int index, float value) {
-  qd_des_foot_.Set(index, value);
-  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.qd_des_foot)
+inline void RobotCmd::set_tau_hip_ff(int index, float value) {
+  tau_hip_ff_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.tau_hip_ff)
 }
-inline void RobotCmd::_internal_add_qd_des_foot(float value) {
-  qd_des_foot_.Add(value);
+inline void RobotCmd::_internal_add_tau_hip_ff(float value) {
+  tau_hip_ff_.Add(value);
 }
-inline void RobotCmd::add_qd_des_foot(float value) {
-  _internal_add_qd_des_foot(value);
-  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.qd_des_foot)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::_internal_qd_des_foot() const {
-  return qd_des_foot_;
+inline void RobotCmd::add_tau_hip_ff(float value) {
+  _internal_add_tau_hip_ff(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.tau_hip_ff)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::qd_des_foot() const {
-  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.qd_des_foot)
-  return _internal_qd_des_foot();
+RobotCmd::_internal_tau_hip_ff() const {
+  return tau_hip_ff_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotCmd::tau_hip_ff() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.tau_hip_ff)
+  return _internal_tau_hip_ff();
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::_internal_mutable_qd_des_foot() {
-  return &qd_des_foot_;
+RobotCmd::_internal_mutable_tau_hip_ff() {
+  return &tau_hip_ff_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::mutable_qd_des_foot() {
-  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.qd_des_foot)
-  return _internal_mutable_qd_des_foot();
+RobotCmd::mutable_tau_hip_ff() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.tau_hip_ff)
+  return _internal_mutable_tau_hip_ff();
 }
 
-// repeated float tau_foot_fb = 19;
-inline int RobotCmd::_internal_tau_foot_fb_size() const {
-  return tau_foot_fb_.size();
+// repeated float tau_knee_ff = 19;
+inline int RobotCmd::_internal_tau_knee_ff_size() const {
+  return tau_knee_ff_.size();
 }
-inline int RobotCmd::tau_foot_fb_size() const {
-  return _internal_tau_foot_fb_size();
+inline int RobotCmd::tau_knee_ff_size() const {
+  return _internal_tau_knee_ff_size();
 }
-inline void RobotCmd::clear_tau_foot_fb() {
-  tau_foot_fb_.Clear();
+inline void RobotCmd::clear_tau_knee_ff() {
+  tau_knee_ff_.Clear();
 }
-inline float RobotCmd::_internal_tau_foot_fb(int index) const {
-  return tau_foot_fb_.Get(index);
+inline float RobotCmd::_internal_tau_knee_ff(int index) const {
+  return tau_knee_ff_.Get(index);
 }
-inline float RobotCmd::tau_foot_fb(int index) const {
-  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.tau_foot_fb)
-  return _internal_tau_foot_fb(index);
+inline float RobotCmd::tau_knee_ff(int index) const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.RobotCmd.tau_knee_ff)
+  return _internal_tau_knee_ff(index);
 }
-inline void RobotCmd::set_tau_foot_fb(int index, float value) {
-  tau_foot_fb_.Set(index, value);
-  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.tau_foot_fb)
+inline void RobotCmd::set_tau_knee_ff(int index, float value) {
+  tau_knee_ff_.Set(index, value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.RobotCmd.tau_knee_ff)
 }
-inline void RobotCmd::_internal_add_tau_foot_fb(float value) {
-  tau_foot_fb_.Add(value);
+inline void RobotCmd::_internal_add_tau_knee_ff(float value) {
+  tau_knee_ff_.Add(value);
 }
-inline void RobotCmd::add_tau_foot_fb(float value) {
-  _internal_add_tau_foot_fb(value);
-  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.tau_foot_fb)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::_internal_tau_foot_fb() const {
-  return tau_foot_fb_;
+inline void RobotCmd::add_tau_knee_ff(float value) {
+  _internal_add_tau_knee_ff(value);
+  // @@protoc_insertion_point(field_add:robot_sdk.pb.RobotCmd.tau_knee_ff)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-RobotCmd::tau_foot_fb() const {
-  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.tau_foot_fb)
-  return _internal_tau_foot_fb();
+RobotCmd::_internal_tau_knee_ff() const {
+  return tau_knee_ff_;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
+RobotCmd::tau_knee_ff() const {
+  // @@protoc_insertion_point(field_list:robot_sdk.pb.RobotCmd.tau_knee_ff)
+  return _internal_tau_knee_ff();
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::_internal_mutable_tau_foot_fb() {
-  return &tau_foot_fb_;
+RobotCmd::_internal_mutable_tau_knee_ff() {
+  return &tau_knee_ff_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-RobotCmd::mutable_tau_foot_fb() {
-  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.tau_foot_fb)
-  return _internal_mutable_tau_foot_fb();
+RobotCmd::mutable_tau_knee_ff() {
+  // @@protoc_insertion_point(field_mutable_list:robot_sdk.pb.RobotCmd.tau_knee_ff)
+  return _internal_mutable_tau_knee_ff();
 }
 
 // repeated float tau_foot_ff = 20;
@@ -3033,9 +3908,647 @@ RobotCmd::mutable_tau_foot_ff() {
   return _internal_mutable_tau_foot_ff();
 }
 
+// -------------------------------------------------------------------
+
+// HighLevelCmd
+
+// float vx = 1;
+inline void HighLevelCmd::clear_vx() {
+  vx_ = 0;
+}
+inline float HighLevelCmd::_internal_vx() const {
+  return vx_;
+}
+inline float HighLevelCmd::vx() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.HighLevelCmd.vx)
+  return _internal_vx();
+}
+inline void HighLevelCmd::_internal_set_vx(float value) {
+  
+  vx_ = value;
+}
+inline void HighLevelCmd::set_vx(float value) {
+  _internal_set_vx(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.HighLevelCmd.vx)
+}
+
+// float vy = 2;
+inline void HighLevelCmd::clear_vy() {
+  vy_ = 0;
+}
+inline float HighLevelCmd::_internal_vy() const {
+  return vy_;
+}
+inline float HighLevelCmd::vy() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.HighLevelCmd.vy)
+  return _internal_vy();
+}
+inline void HighLevelCmd::_internal_set_vy(float value) {
+  
+  vy_ = value;
+}
+inline void HighLevelCmd::set_vy(float value) {
+  _internal_set_vy(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.HighLevelCmd.vy)
+}
+
+// float roll_rate = 3;
+inline void HighLevelCmd::clear_roll_rate() {
+  roll_rate_ = 0;
+}
+inline float HighLevelCmd::_internal_roll_rate() const {
+  return roll_rate_;
+}
+inline float HighLevelCmd::roll_rate() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.HighLevelCmd.roll_rate)
+  return _internal_roll_rate();
+}
+inline void HighLevelCmd::_internal_set_roll_rate(float value) {
+  
+  roll_rate_ = value;
+}
+inline void HighLevelCmd::set_roll_rate(float value) {
+  _internal_set_roll_rate(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.HighLevelCmd.roll_rate)
+}
+
+// float pitch_rate = 4;
+inline void HighLevelCmd::clear_pitch_rate() {
+  pitch_rate_ = 0;
+}
+inline float HighLevelCmd::_internal_pitch_rate() const {
+  return pitch_rate_;
+}
+inline float HighLevelCmd::pitch_rate() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.HighLevelCmd.pitch_rate)
+  return _internal_pitch_rate();
+}
+inline void HighLevelCmd::_internal_set_pitch_rate(float value) {
+  
+  pitch_rate_ = value;
+}
+inline void HighLevelCmd::set_pitch_rate(float value) {
+  _internal_set_pitch_rate(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.HighLevelCmd.pitch_rate)
+}
+
+// float yaw_rate = 5;
+inline void HighLevelCmd::clear_yaw_rate() {
+  yaw_rate_ = 0;
+}
+inline float HighLevelCmd::_internal_yaw_rate() const {
+  return yaw_rate_;
+}
+inline float HighLevelCmd::yaw_rate() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.HighLevelCmd.yaw_rate)
+  return _internal_yaw_rate();
+}
+inline void HighLevelCmd::_internal_set_yaw_rate(float value) {
+  
+  yaw_rate_ = value;
+}
+inline void HighLevelCmd::set_yaw_rate(float value) {
+  _internal_set_yaw_rate(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.HighLevelCmd.yaw_rate)
+}
+
+// float height_rate = 6;
+inline void HighLevelCmd::clear_height_rate() {
+  height_rate_ = 0;
+}
+inline float HighLevelCmd::_internal_height_rate() const {
+  return height_rate_;
+}
+inline float HighLevelCmd::height_rate() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.HighLevelCmd.height_rate)
+  return _internal_height_rate();
+}
+inline void HighLevelCmd::_internal_set_height_rate(float value) {
+  
+  height_rate_ = value;
+}
+inline void HighLevelCmd::set_height_rate(float value) {
+  _internal_set_height_rate(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.HighLevelCmd.height_rate)
+}
+
+// uint32 jump_triger = 7;
+inline void HighLevelCmd::clear_jump_triger() {
+  jump_triger_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HighLevelCmd::_internal_jump_triger() const {
+  return jump_triger_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HighLevelCmd::jump_triger() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.HighLevelCmd.jump_triger)
+  return _internal_jump_triger();
+}
+inline void HighLevelCmd::_internal_set_jump_triger(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  jump_triger_ = value;
+}
+inline void HighLevelCmd::set_jump_triger(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_jump_triger(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.HighLevelCmd.jump_triger)
+}
+
+// uint32 backflip_triger = 8;
+inline void HighLevelCmd::clear_backflip_triger() {
+  backflip_triger_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HighLevelCmd::_internal_backflip_triger() const {
+  return backflip_triger_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HighLevelCmd::backflip_triger() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.HighLevelCmd.backflip_triger)
+  return _internal_backflip_triger();
+}
+inline void HighLevelCmd::_internal_set_backflip_triger(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  backflip_triger_ = value;
+}
+inline void HighLevelCmd::set_backflip_triger(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_backflip_triger(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.HighLevelCmd.backflip_triger)
+}
+
+// uint32 two_leg_stand = 9;
+inline void HighLevelCmd::clear_two_leg_stand() {
+  two_leg_stand_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HighLevelCmd::_internal_two_leg_stand() const {
+  return two_leg_stand_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HighLevelCmd::two_leg_stand() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.HighLevelCmd.two_leg_stand)
+  return _internal_two_leg_stand();
+}
+inline void HighLevelCmd::_internal_set_two_leg_stand(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  two_leg_stand_ = value;
+}
+inline void HighLevelCmd::set_two_leg_stand(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_two_leg_stand(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.HighLevelCmd.two_leg_stand)
+}
+
+// uint32 control_mode = 10;
+inline void HighLevelCmd::clear_control_mode() {
+  control_mode_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HighLevelCmd::_internal_control_mode() const {
+  return control_mode_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HighLevelCmd::control_mode() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.HighLevelCmd.control_mode)
+  return _internal_control_mode();
+}
+inline void HighLevelCmd::_internal_set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  control_mode_ = value;
+}
+inline void HighLevelCmd::set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_control_mode(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.HighLevelCmd.control_mode)
+}
+
+// uint32 enable_control_mode = 11;
+inline void HighLevelCmd::clear_enable_control_mode() {
+  enable_control_mode_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HighLevelCmd::_internal_enable_control_mode() const {
+  return enable_control_mode_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HighLevelCmd::enable_control_mode() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.HighLevelCmd.enable_control_mode)
+  return _internal_enable_control_mode();
+}
+inline void HighLevelCmd::_internal_set_enable_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  enable_control_mode_ = value;
+}
+inline void HighLevelCmd::set_enable_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_enable_control_mode(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.HighLevelCmd.enable_control_mode)
+}
+
+// -------------------------------------------------------------------
+
+// AppCmd
+
+// float vx = 3;
+inline void AppCmd::clear_vx() {
+  vx_ = 0;
+}
+inline float AppCmd::_internal_vx() const {
+  return vx_;
+}
+inline float AppCmd::vx() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.AppCmd.vx)
+  return _internal_vx();
+}
+inline void AppCmd::_internal_set_vx(float value) {
+  
+  vx_ = value;
+}
+inline void AppCmd::set_vx(float value) {
+  _internal_set_vx(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.AppCmd.vx)
+}
+
+// float vy = 4;
+inline void AppCmd::clear_vy() {
+  vy_ = 0;
+}
+inline float AppCmd::_internal_vy() const {
+  return vy_;
+}
+inline float AppCmd::vy() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.AppCmd.vy)
+  return _internal_vy();
+}
+inline void AppCmd::_internal_set_vy(float value) {
+  
+  vy_ = value;
+}
+inline void AppCmd::set_vy(float value) {
+  _internal_set_vy(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.AppCmd.vy)
+}
+
+// float yaw_rate = 5;
+inline void AppCmd::clear_yaw_rate() {
+  yaw_rate_ = 0;
+}
+inline float AppCmd::_internal_yaw_rate() const {
+  return yaw_rate_;
+}
+inline float AppCmd::yaw_rate() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.AppCmd.yaw_rate)
+  return _internal_yaw_rate();
+}
+inline void AppCmd::_internal_set_yaw_rate(float value) {
+  
+  yaw_rate_ = value;
+}
+inline void AppCmd::set_yaw_rate(float value) {
+  _internal_set_yaw_rate(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.AppCmd.yaw_rate)
+}
+
+// float pitch_rate = 6;
+inline void AppCmd::clear_pitch_rate() {
+  pitch_rate_ = 0;
+}
+inline float AppCmd::_internal_pitch_rate() const {
+  return pitch_rate_;
+}
+inline float AppCmd::pitch_rate() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.AppCmd.pitch_rate)
+  return _internal_pitch_rate();
+}
+inline void AppCmd::_internal_set_pitch_rate(float value) {
+  
+  pitch_rate_ = value;
+}
+inline void AppCmd::set_pitch_rate(float value) {
+  _internal_set_pitch_rate(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.AppCmd.pitch_rate)
+}
+
+// uint32 left_head = 7;
+inline void AppCmd::clear_left_head() {
+  left_head_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::_internal_left_head() const {
+  return left_head_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::left_head() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.AppCmd.left_head)
+  return _internal_left_head();
+}
+inline void AppCmd::_internal_set_left_head(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  left_head_ = value;
+}
+inline void AppCmd::set_left_head(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_left_head(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.AppCmd.left_head)
+}
+
+// uint32 right_head = 8;
+inline void AppCmd::clear_right_head() {
+  right_head_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::_internal_right_head() const {
+  return right_head_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::right_head() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.AppCmd.right_head)
+  return _internal_right_head();
+}
+inline void AppCmd::_internal_set_right_head(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  right_head_ = value;
+}
+inline void AppCmd::set_right_head(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_right_head(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.AppCmd.right_head)
+}
+
+// uint32 high_height = 9;
+inline void AppCmd::clear_high_height() {
+  high_height_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::_internal_high_height() const {
+  return high_height_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::high_height() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.AppCmd.high_height)
+  return _internal_high_height();
+}
+inline void AppCmd::_internal_set_high_height(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  high_height_ = value;
+}
+inline void AppCmd::set_high_height(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_high_height(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.AppCmd.high_height)
+}
+
+// uint32 low_height = 10;
+inline void AppCmd::clear_low_height() {
+  low_height_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::_internal_low_height() const {
+  return low_height_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::low_height() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.AppCmd.low_height)
+  return _internal_low_height();
+}
+inline void AppCmd::_internal_set_low_height(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  low_height_ = value;
+}
+inline void AppCmd::set_low_height(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_low_height(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.AppCmd.low_height)
+}
+
+// uint32 control_mode = 11;
+inline void AppCmd::clear_control_mode() {
+  control_mode_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::_internal_control_mode() const {
+  return control_mode_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::control_mode() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.AppCmd.control_mode)
+  return _internal_control_mode();
+}
+inline void AppCmd::_internal_set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  control_mode_ = value;
+}
+inline void AppCmd::set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_control_mode(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.AppCmd.control_mode)
+}
+
+// uint32 motion_mode = 12;
+inline void AppCmd::clear_motion_mode() {
+  motion_mode_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::_internal_motion_mode() const {
+  return motion_mode_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 AppCmd::motion_mode() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.AppCmd.motion_mode)
+  return _internal_motion_mode();
+}
+inline void AppCmd::_internal_set_motion_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  motion_mode_ = value;
+}
+inline void AppCmd::set_motion_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_motion_mode(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.AppCmd.motion_mode)
+}
+
+// uint64 time_stamp = 13;
+inline void AppCmd::clear_time_stamp() {
+  time_stamp_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 AppCmd::_internal_time_stamp() const {
+  return time_stamp_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 AppCmd::time_stamp() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.AppCmd.time_stamp)
+  return _internal_time_stamp();
+}
+inline void AppCmd::_internal_set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  time_stamp_ = value;
+}
+inline void AppCmd::set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_time_stamp(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.AppCmd.time_stamp)
+}
+
+// -------------------------------------------------------------------
+
+// SDKCmd
+
+// float vx = 3;
+inline void SDKCmd::clear_vx() {
+  vx_ = 0;
+}
+inline float SDKCmd::_internal_vx() const {
+  return vx_;
+}
+inline float SDKCmd::vx() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.SDKCmd.vx)
+  return _internal_vx();
+}
+inline void SDKCmd::_internal_set_vx(float value) {
+  
+  vx_ = value;
+}
+inline void SDKCmd::set_vx(float value) {
+  _internal_set_vx(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.SDKCmd.vx)
+}
+
+// float vy = 4;
+inline void SDKCmd::clear_vy() {
+  vy_ = 0;
+}
+inline float SDKCmd::_internal_vy() const {
+  return vy_;
+}
+inline float SDKCmd::vy() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.SDKCmd.vy)
+  return _internal_vy();
+}
+inline void SDKCmd::_internal_set_vy(float value) {
+  
+  vy_ = value;
+}
+inline void SDKCmd::set_vy(float value) {
+  _internal_set_vy(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.SDKCmd.vy)
+}
+
+// float vz = 5;
+inline void SDKCmd::clear_vz() {
+  vz_ = 0;
+}
+inline float SDKCmd::_internal_vz() const {
+  return vz_;
+}
+inline float SDKCmd::vz() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.SDKCmd.vz)
+  return _internal_vz();
+}
+inline void SDKCmd::_internal_set_vz(float value) {
+  
+  vz_ = value;
+}
+inline void SDKCmd::set_vz(float value) {
+  _internal_set_vz(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.SDKCmd.vz)
+}
+
+// float yaw_rate = 6;
+inline void SDKCmd::clear_yaw_rate() {
+  yaw_rate_ = 0;
+}
+inline float SDKCmd::_internal_yaw_rate() const {
+  return yaw_rate_;
+}
+inline float SDKCmd::yaw_rate() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.SDKCmd.yaw_rate)
+  return _internal_yaw_rate();
+}
+inline void SDKCmd::_internal_set_yaw_rate(float value) {
+  
+  yaw_rate_ = value;
+}
+inline void SDKCmd::set_yaw_rate(float value) {
+  _internal_set_yaw_rate(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.SDKCmd.yaw_rate)
+}
+
+// float pitch_rate = 7;
+inline void SDKCmd::clear_pitch_rate() {
+  pitch_rate_ = 0;
+}
+inline float SDKCmd::_internal_pitch_rate() const {
+  return pitch_rate_;
+}
+inline float SDKCmd::pitch_rate() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.SDKCmd.pitch_rate)
+  return _internal_pitch_rate();
+}
+inline void SDKCmd::_internal_set_pitch_rate(float value) {
+  
+  pitch_rate_ = value;
+}
+inline void SDKCmd::set_pitch_rate(float value) {
+  _internal_set_pitch_rate(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.SDKCmd.pitch_rate)
+}
+
+// float roll_rate = 8;
+inline void SDKCmd::clear_roll_rate() {
+  roll_rate_ = 0;
+}
+inline float SDKCmd::_internal_roll_rate() const {
+  return roll_rate_;
+}
+inline float SDKCmd::roll_rate() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.SDKCmd.roll_rate)
+  return _internal_roll_rate();
+}
+inline void SDKCmd::_internal_set_roll_rate(float value) {
+  
+  roll_rate_ = value;
+}
+inline void SDKCmd::set_roll_rate(float value) {
+  _internal_set_roll_rate(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.SDKCmd.roll_rate)
+}
+
+// uint32 control_mode = 11;
+inline void SDKCmd::clear_control_mode() {
+  control_mode_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 SDKCmd::_internal_control_mode() const {
+  return control_mode_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 SDKCmd::control_mode() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.SDKCmd.control_mode)
+  return _internal_control_mode();
+}
+inline void SDKCmd::_internal_set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  control_mode_ = value;
+}
+inline void SDKCmd::set_control_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_control_mode(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.SDKCmd.control_mode)
+}
+
+// uint32 motion_mode = 12;
+inline void SDKCmd::clear_motion_mode() {
+  motion_mode_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 SDKCmd::_internal_motion_mode() const {
+  return motion_mode_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 SDKCmd::motion_mode() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.SDKCmd.motion_mode)
+  return _internal_motion_mode();
+}
+inline void SDKCmd::_internal_set_motion_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  motion_mode_ = value;
+}
+inline void SDKCmd::set_motion_mode(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_motion_mode(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.SDKCmd.motion_mode)
+}
+
+// uint64 time_stamp = 13;
+inline void SDKCmd::clear_time_stamp() {
+  time_stamp_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 SDKCmd::_internal_time_stamp() const {
+  return time_stamp_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 SDKCmd::time_stamp() const {
+  // @@protoc_insertion_point(field_get:robot_sdk.pb.SDKCmd.time_stamp)
+  return _internal_time_stamp();
+}
+inline void SDKCmd::_internal_set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  time_stamp_ = value;
+}
+inline void SDKCmd::set_time_stamp(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_time_stamp(value);
+  // @@protoc_insertion_point(field_set:robot_sdk.pb.SDKCmd.time_stamp)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 

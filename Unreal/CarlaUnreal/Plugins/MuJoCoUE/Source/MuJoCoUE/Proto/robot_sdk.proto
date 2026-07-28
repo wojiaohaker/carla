@@ -1,10 +1,10 @@
 // Matrix robot_sdk protobuf 消息定义
-// 通过抓取 UE↔mc_ctrl 实际通信数据逆向工程得出
-// 验证方式: 重编码与原始数据完全匹配 (303/365 字节)
+// 从 /usr/lib/librobot_sdk.so 内嵌 FileDescriptorProto 提取的真实定义
+// 验证: protoc --decode 与 mc_ctrl 二进制完全匹配
 //
 // 通信方式: zsibot::rmw 中间件, UDP 传输
-//   UE → mc_ctrl: port 25001 (RobotState, 303 bytes)
-//   mc_ctrl → UE: port 25002 (RobotCmd, 365 bytes)
+//   UE → mc_ctrl: port 25001 (RobotState)
+//   mc_ctrl → UE: port 25002 (RobotCmd)
 //
 // 关节顺序: [FR, FL, RR, RL] (右前, 左前, 右后, 左后)
 
@@ -18,35 +18,33 @@ message RobotState {
     repeated float q_abad = 1;      // [4] 外展/内收
     repeated float q_hip = 2;       // [4] 髋关节
     repeated float q_knee = 3;      // [4] 膝关节
+    repeated float q_foot = 4;      // [4] 足端 (无足端关节填0)
 
     // 关节速度 (rad/s)
-    repeated float qd_abad = 4;     // [4]
-    repeated float qd_hip = 5;      // [4]
-    repeated float qd_knee = 6;     // [4]
+    repeated float qd_abad = 5;     // [4]
+    repeated float qd_hip = 6;      // [4]
+    repeated float qd_knee = 7;     // [4]
+    repeated float qd_foot = 8;     // [4] 足端速度 (填0)
 
-    // 机体角速度? (rad/s) - 4个值, 静止时为0
-    repeated float omega_body = 7;  // [4] 待确认
-
-    // 力矩反馈 (N·m) - 静止时为0
-    repeated float tau_abad_fb = 8; // [4]
-    repeated float tau_hip_fb = 9;  // [4]  注意: 实际值可能是足端位置
-    repeated float tau_knee_fb = 10;// [4]  注意: 实际值可能是足端位置
-
-    // 足端位置? 或位置 (cm?)
-    repeated float position = 11;   // [4] 值约 3.7~4.7
-    repeated float tau_ff = 12;     // [4] 静止时为0
+    // 力矩反馈 (N·m)
+    repeated float tau_abad_fb = 9;  // [4]
+    repeated float tau_hip_fb = 10;  // [4]
+    repeated float tau_knee_fb = 11; // [4]
+    repeated float tau_foot_fb = 12; // [4] 足端力矩 (填0)
 
     // 姿态
     repeated float quat = 13;       // [4] 四元数 [w, x, y, z]
-    repeated float gyro = 14;       // [3] 陀螺仪 (rad/s)
-    repeated float acc = 15;        // [3] 加速度计 (m/s²), 静止时≈[0,0,9.8]
+    repeated float gyro = 14;       // [3] 陀螺仪 (rad/s) 机体系
+    repeated float acc = 15;        // [3] 加速度计 (m/s²) 机体系, 静止时≈[0,0,9.8]
+    repeated float rpy = 16;        // [3] 欧拉角
 
     // 时间戳 (纳秒)
     uint64 time_stamp = 17;
 
-    // 欧拉角 / 其他
-    repeated float rpy = 19;        // [3] 待确认
-    repeated float omega_world = 20;// [3] 待确认
+    // 深度/位置/速度
+    repeated float depth = 18;      // 深度数据 (可选)
+    repeated float position = 19;   // [3] 世界坐标位置
+    repeated float v_world = 20;    // [3] 世界系线速度
 }
 
 // mc_ctrl → UE: 控制指令
@@ -55,29 +53,70 @@ message RobotCmd {
     repeated float q_des_abad = 1;  // [4]
     repeated float q_des_hip = 2;   // [4]
     repeated float q_des_knee = 3;  // [4]
+    repeated float q_des_foot = 4;  // [4]
 
     // 目标关节速度 (rad/s)
-    repeated float qd_des_abad = 4; // [4]
-    repeated float qd_des_hip = 5;  // [4]
-    repeated float qd_des_knee = 6; // [4]
-
-    // 前馈力矩 (N·m)
-    repeated float tau_abad_ff = 7; // [4]
-    repeated float tau_hip_ff = 8;  // [4]
+    repeated float qd_des_abad = 5; // [4]
+    repeated float qd_des_hip = 6;  // [4]
+    repeated float qd_des_knee = 7; // [4]
+    repeated float qd_des_foot = 8; // [4]
 
     // PD 增益
-    repeated float kp_abad = 9;     // [4] 趴地时=20, 站立时预期更大
+    repeated float kp_abad = 9;     // [4]
     repeated float kp_hip = 10;     // [4]
     repeated float kp_knee = 11;    // [4]
-    repeated float kd_abad = 12;    // [4] 趴地时=0
-    repeated float kd_hip = 13;     // [4] 趴地时=0.7
-    repeated float kd_knee = 14;    // [4] 趴地时=0.7
-
-    // 足端控制
-    repeated float kp_foot = 15;    // [4] 趴地时=0.7
+    repeated float kp_foot = 12;    // [4]
+    repeated float kd_abad = 13;    // [4]
+    repeated float kd_hip = 14;     // [4]
+    repeated float kd_knee = 15;    // [4]
     repeated float kd_foot = 16;    // [4]
-    repeated float q_des_foot = 17; // [4]
-    repeated float qd_des_foot = 18;// [4]
-    repeated float tau_foot_fb = 19;// [4]
-    repeated float tau_foot_ff = 20;// [4]
+
+    // 前馈力矩 (N·m)
+    repeated float tau_abad_ff = 17; // [4]
+    repeated float tau_hip_ff = 18;  // [4]
+    repeated float tau_knee_ff = 19; // [4]
+    repeated float tau_foot_ff = 20; // [4]
+}
+
+// 高层控制指令 (端口 14000/14001/14002 之一)
+message HighLevelCmd {
+    float vx = 1;                   // 前进速度 (m/s)
+    float vy = 2;                   // 横移速度 (m/s)
+    float roll_rate = 3;            // 横滚角速度
+    float pitch_rate = 4;           // 俯仰角速度
+    float yaw_rate = 5;             // 偏航角速度
+    float height_rate = 6;          // 高度变化率
+    uint32 jump_triger = 7;         // 跳跃触发
+    uint32 backflip_triger = 8;     // 后空翻触发
+    uint32 two_leg_stand = 9;       // 两足站立
+    uint32 control_mode = 10;       // 控制模式
+    uint32 enable_control_mode = 11; // 使能控制模式
+}
+
+// App 控制指令
+message AppCmd {
+    float vx = 3;                   // 前进速度 (m/s)
+    float vy = 4;                   // 横移速度 (m/s)
+    float yaw_rate = 5;             // 偏航角速度
+    float pitch_rate = 6;           // 俯仰角速度
+    uint32 left_head = 7;
+    uint32 right_head = 8;
+    uint32 high_height = 9;         // 升高
+    uint32 low_height = 10;         // 降低
+    uint32 control_mode = 11;       // 控制模式
+    uint32 motion_mode = 12;        // 运动模式
+    uint64 time_stamp = 13;
+}
+
+// SDK 控制指令
+message SDKCmd {
+    float vx = 3;                   // 前进速度 (m/s)
+    float vy = 4;                   // 横移速度 (m/s)
+    float vz = 5;                   // 垂直速度
+    float yaw_rate = 6;             // 偏航角速度
+    float pitch_rate = 7;           // 俯仰角速度
+    float roll_rate = 8;            // 横滚角速度
+    uint32 control_mode = 11;       // 控制模式
+    uint32 motion_mode = 12;        // 运动模式
+    uint64 time_stamp = 13;
 }

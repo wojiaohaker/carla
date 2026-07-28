@@ -1129,6 +1129,18 @@ void AMuJoCoSimulation::SendStateToMcCtrl()
 	RPY[1] = FMath::Asin(FMath::Clamp(2.0f * (w*y - z*x), -1.0f, 1.0f));   // pitch
 	RPY[2] = FMath::Atan2(2.0f * (w*z + x*y), 1.0f - 2.0f * (y*y + z*z)); // yaw
 
-	UdpSender->UpdateState(JointPos, JointVel, JointTau, Quat, Gyro, Acc, RPY);
+	// World position and velocity of base body
+	TArray<float> Position, VWorld;
+	Position.SetNum(3);
+	VWorld.SetNum(3);
+	Position[0] = static_cast<float>(mData->xpos[baseBody * 3 + 0]);
+	Position[1] = static_cast<float>(mData->xpos[baseBody * 3 + 1]);
+	Position[2] = static_cast<float>(mData->xpos[baseBody * 3 + 2]);
+	// cvel is [angular(3), linear(3)] in global frame
+	VWorld[0] = static_cast<float>(mData->cvel[baseBody * 6 + 3]);
+	VWorld[1] = static_cast<float>(mData->cvel[baseBody * 6 + 4]);
+	VWorld[2] = static_cast<float>(mData->cvel[baseBody * 6 + 5]);
+
+	UdpSender->UpdateState(JointPos, JointVel, JointTau, Quat, Gyro, Acc, RPY, Position, VWorld);
 	UdpSender->SendState();
 }

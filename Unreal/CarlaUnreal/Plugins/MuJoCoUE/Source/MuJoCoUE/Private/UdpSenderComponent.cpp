@@ -103,7 +103,9 @@ void UUdpSenderComponent::UpdateState(
 	const TArray<float>& Quat,
 	const TArray<float>& Gyro,
 	const TArray<float>& Acc,
-	const TArray<float>& RPY)
+	const TArray<float>& RPY,
+	const TArray<float>& Position,
+	const TArray<float>& VWorld)
 {
 	// Joint positions: [abad×4, hip×4, knee×4]
 	if (JointPos.Num() >= 12)
@@ -111,11 +113,13 @@ void UUdpSenderComponent::UpdateState(
 		StateMsg->clear_q_abad();
 		StateMsg->clear_q_hip();
 		StateMsg->clear_q_knee();
+		StateMsg->clear_q_foot();
 		for (int32 i = 0; i < 4; i++)
 		{
 			StateMsg->add_q_abad(JointPos[i]);
 			StateMsg->add_q_hip(JointPos[4 + i]);
 			StateMsg->add_q_knee(JointPos[8 + i]);
+			StateMsg->add_q_foot(0.0f); // No foot joint
 		}
 	}
 
@@ -125,11 +129,13 @@ void UUdpSenderComponent::UpdateState(
 		StateMsg->clear_qd_abad();
 		StateMsg->clear_qd_hip();
 		StateMsg->clear_qd_knee();
+		StateMsg->clear_qd_foot();
 		for (int32 i = 0; i < 4; i++)
 		{
 			StateMsg->add_qd_abad(JointVel[i]);
 			StateMsg->add_qd_hip(JointVel[4 + i]);
 			StateMsg->add_qd_knee(JointVel[8 + i]);
+			StateMsg->add_qd_foot(0.0f); // No foot joint
 		}
 	}
 
@@ -139,11 +145,13 @@ void UUdpSenderComponent::UpdateState(
 		StateMsg->clear_tau_abad_fb();
 		StateMsg->clear_tau_hip_fb();
 		StateMsg->clear_tau_knee_fb();
+		StateMsg->clear_tau_foot_fb();
 		for (int32 i = 0; i < 4; i++)
 		{
 			StateMsg->add_tau_abad_fb(JointTau[i]);
 			StateMsg->add_tau_hip_fb(JointTau[4 + i]);
 			StateMsg->add_tau_knee_fb(JointTau[8 + i]);
+			StateMsg->add_tau_foot_fb(0.0f); // No foot torque
 		}
 	}
 
@@ -157,7 +165,7 @@ void UUdpSenderComponent::UpdateState(
 		}
 	}
 
-	// Gyroscope
+	// Gyroscope (body frame)
 	if (Gyro.Num() >= 3)
 	{
 		StateMsg->clear_gyro();
@@ -167,7 +175,7 @@ void UUdpSenderComponent::UpdateState(
 		}
 	}
 
-	// Accelerometer
+	// Accelerometer (body frame)
 	if (Acc.Num() >= 3)
 	{
 		StateMsg->clear_acc();
@@ -190,6 +198,26 @@ void UUdpSenderComponent::UpdateState(
 	// Timestamp in nanoseconds
 	uint64 NowNs = static_cast<uint64>(FPlatformTime::Seconds() * 1e9);
 	StateMsg->set_time_stamp(NowNs);
+
+	// World position [x, y, z]
+	if (Position.Num() >= 3)
+	{
+		StateMsg->clear_position();
+		for (int32 i = 0; i < 3; i++)
+		{
+			StateMsg->add_position(Position[i]);
+		}
+	}
+
+	// World velocity [vx, vy, vz]
+	if (VWorld.Num() >= 3)
+	{
+		StateMsg->clear_v_world();
+		for (int32 i = 0; i < 3; i++)
+		{
+			StateMsg->add_v_world(VWorld[i]);
+		}
+	}
 }
 
 bool UUdpSenderComponent::SendState()

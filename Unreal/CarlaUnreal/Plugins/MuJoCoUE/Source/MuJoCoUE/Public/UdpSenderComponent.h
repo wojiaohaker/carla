@@ -58,6 +58,8 @@ public:
 	 * @param Gyro        Body angular velocity [wx, wy, wz] (rad/s)
 	 * @param Acc         Body linear acceleration [ax, ay, az] (m/s^2)
 	 * @param RPY         Body euler angles [roll, pitch, yaw] (rad)
+	 * @param Position    Body world position [x, y, z] (m)
+	 * @param VWorld      Body world velocity [vx, vy, vz] (m/s)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "UDP Sender")
 	void UpdateState(
@@ -67,7 +69,9 @@ public:
 		const TArray<float>& Quat,
 		const TArray<float>& Gyro,
 		const TArray<float>& Acc,
-		const TArray<float>& RPY);
+		const TArray<float>& RPY,
+		const TArray<float>& Position,
+		const TArray<float>& VWorld);
 
 	/** Send the current state packet to mc_ctrl. */
 	UFUNCTION(BlueprintCallable, Category = "UDP Sender")

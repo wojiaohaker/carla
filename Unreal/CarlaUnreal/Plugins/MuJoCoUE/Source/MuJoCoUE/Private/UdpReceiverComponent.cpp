@@ -203,7 +203,7 @@ bool UUdpReceiverComponent::ParseProtobufCommand(const TArray<uint8>& Data, FUdp
 		OutData.JointVelocities[8 + i] = (Cmd.qd_des_knee_size() > i) ? Cmd.qd_des_knee(i) : 0.0f;
 		OutData.KpValues[8 + i] = (Cmd.kp_knee_size() > i) ? Cmd.kp_knee(i) : 0.0f;
 		OutData.KdValues[8 + i] = (Cmd.kd_knee_size() > i) ? Cmd.kd_knee(i) : 0.0f;
-		OutData.TauFF[8 + i] = 0.0f; // RobotCmd has no tau_knee_ff field
+		OutData.TauFF[8 + i] = (Cmd.tau_knee_ff_size() > i) ? Cmd.tau_knee_ff(i) : 0.0f;
 	}
 
 	return true;

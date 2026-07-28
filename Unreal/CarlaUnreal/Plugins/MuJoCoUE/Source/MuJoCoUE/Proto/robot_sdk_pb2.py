@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x0frobot_sdk.proto\x12\x0crobot_sdk.pb\"\xc0\x02\n\nRobotState\x12\x0e\n\x06q_abad\x18\x01 \x03(\x02\x12\r\n\x05q_hip\x18\x02 \x03(\x02\x12\x0e\n\x06q_knee\x18\x03 \x03(\x02\x12\x0f\n\x07qd_abad\x18\x04 \x03(\x02\x12\x0e\n\x06qd_hip\x18\x05 \x03(\x02\x12\x0f\n\x07qd_knee\x18\x06 \x03(\x02\x12\x12\n\nomega_body\x18\x07 \x03(\x02\x12\x13\n\x0btau_abad_fb\x18\x08 \x03(\x02\x12\x12\n\ntau_hip_fb\x18\t \x03(\x02\x12\x13\n\x0btau_knee_fb\x18\n \x03(\x02\x12\x10\n\x08position\x18\x0b \x03(\x02\x12\x0e\n\x06tau_ff\x18\x0c \x03(\x02\x12\x0c\n\x04quat\x18\r \x03(\x02\x12\x0c\n\x04gyro\x18\x0e \x03(\x02\x12\x0b\n\x03\x61\x63\x63\x18\x0f \x03(\x02\x12\x12\n\ntime_stamp\x18\x11 \x01(\x04\x12\x0b\n\x03rpy\x18\x13 \x03(\x02\x12\x13\n\x0bomega_world\x18\x14 \x03(\x02\"\x85\x03\n\x08RobotCmd\x12\x12\n\nq_des_abad\x18\x01 \x03(\x02\x12\x11\n\tq_des_hip\x18\x02 \x03(\x02\x12\x12\n\nq_des_knee\x18\x03 \x03(\x02\x12\x13\n\x0bqd_des_abad\x18\x04 \x03(\x02\x12\x12\n\nqd_des_hip\x18\x05 \x03(\x02\x12\x13\n\x0bqd_des_knee\x18\x06 \x03(\x02\x12\x13\n\x0btau_abad_ff\x18\x07 \x03(\x02\x12\x12\n\ntau_hip_ff\x18\x08 \x03(\x02\x12\x0f\n\x07kp_abad\x18\t \x03(\x02\x12\x0e\n\x06kp_hip\x18\n \x03(\x02\x12\x0f\n\x07kp_knee\x18\x0b \x03(\x02\x12\x0f\n\x07kd_abad\x18\x0c \x03(\x02\x12\x0e\n\x06kd_hip\x18\r \x03(\x02\x12\x0f\n\x07kd_knee\x18\x0e \x03(\x02\x12\x0f\n\x07kp_foot\x18\x0f \x03(\x02\x12\x0f\n\x07kd_foot\x18\x10 \x03(\x02\x12\x12\n\nq_des_foot\x18\x11 \x03(\x02\x12\x13\n\x0bqd_des_foot\x18\x12 \x03(\x02\x12\x13\n\x0btau_foot_fb\x18\x13 \x03(\x02\x12\x13\n\x0btau_foot_ff\x18\x14 \x03(\x02\x62\x06proto3'
+  serialized_pb=b'\n\x0frobot_sdk.proto\x12\x0crobot_sdk.pb\"\xdd\x02\n\nRobotState\x12\x0e\n\x06q_abad\x18\x01 \x03(\x02\x12\r\n\x05q_hip\x18\x02 \x03(\x02\x12\x0e\n\x06q_knee\x18\x03 \x03(\x02\x12\x0e\n\x06q_foot\x18\x04 \x03(\x02\x12\x0f\n\x07qd_abad\x18\x05 \x03(\x02\x12\x0e\n\x06qd_hip\x18\x06 \x03(\x02\x12\x0f\n\x07qd_knee\x18\x07 \x03(\x02\x12\x0f\n\x07qd_foot\x18\x08 \x03(\x02\x12\x13\n\x0btau_abad_fb\x18\t \x03(\x02\x12\x12\n\ntau_hip_fb\x18\n \x03(\x02\x12\x13\n\x0btau_knee_fb\x18\x0b \x03(\x02\x12\x13\n\x0btau_foot_fb\x18\x0c \x03(\x02\x12\x0c\n\x04quat\x18\r \x03(\x02\x12\x0c\n\x04gyro\x18\x0e \x03(\x02\x12\x0b\n\x03\x61\x63\x63\x18\x0f \x03(\x02\x12\x0b\n\x03rpy\x18\x10 \x03(\x02\x12\x12\n\ntime_stamp\x18\x11 \x01(\x04\x12\r\n\x05\x64\x65pth\x18\x12 \x03(\x02\x12\x10\n\x08position\x18\x13 \x03(\x02\x12\x0f\n\x07v_world\x18\x14 \x03(\x02\"\x85\x03\n\x08RobotCmd\x12\x12\n\nq_des_abad\x18\x01 \x03(\x02\x12\x11\n\tq_des_hip\x18\x02 \x03(\x02\x12\x12\n\nq_des_knee\x18\x03 \x03(\x02\x12\x12\n\nq_des_foot\x18\x04 \x03(\x02\x12\x13\n\x0bqd_des_abad\x18\x05 \x03(\x02\x12\x12\n\nqd_des_hip\x18\x06 \x03(\x02\x12\x13\n\x0bqd_des_knee\x18\x07 \x03(\x02\x12\x13\n\x0bqd_des_foot\x18\x08 \x03(\x02\x12\x0f\n\x07kp_abad\x18\t \x03(\x02\x12\x0e\n\x06kp_hip\x18\n \x03(\x02\x12\x0f\n\x07kp_knee\x18\x0b \x03(\x02\x12\x0f\n\x07kp_foot\x18\x0c \x03(\x02\x12\x0f\n\x07kd_abad\x18\r \x03(\x02\x12\x0e\n\x06kd_hip\x18\x0e \x03(\x02\x12\x0f\n\x07kd_knee\x18\x0f \x03(\x02\x12\x0f\n\x07kd_foot\x18\x10 \x03(\x02\x12\x13\n\x0btau_abad_ff\x18\x11 \x03(\x02\x12\x12\n\ntau_hip_ff\x18\x12 \x03(\x02\x12\x13\n\x0btau_knee_ff\x18\x13 \x03(\x02\x12\x13\n\x0btau_foot_ff\x18\x14 \x03(\x02\"\xec\x01\n\x0cHighLevelCmd\x12\n\n\x02vx\x18\x01 \x01(\x02\x12\n\n\x02vy\x18\x02 \x01(\x02\x12\x11\n\troll_rate\x18\x03 \x01(\x02\x12\x12\n\npitch_rate\x18\x04 \x01(\x02\x12\x10\n\x08yaw_rate\x18\x05 \x01(\x02\x12\x13\n\x0bheight_rate\x18\x06 \x01(\x02\x12\x13\n\x0bjump_triger\x18\x07 \x01(\r\x12\x17\n\x0f\x62\x61\x63kflip_triger\x18\x08 \x01(\r\x12\x15\n\rtwo_leg_stand\x18\t \x01(\r\x12\x14\n\x0c\x63ontrol_mode\x18\n \x01(\r\x12\x1b\n\x13\x65nable_control_mode\x18\x0b \x01(\r\"\xd5\x01\n\x06\x41ppCmd\x12\n\n\x02vx\x18\x03 \x01(\x02\x12\n\n\x02vy\x18\x04 \x01(\x02\x12\x10\n\x08yaw_rate\x18\x05 \x01(\x02\x12\x12\n\npitch_rate\x18\x06 \x01(\x02\x12\x11\n\tleft_head\x18\x07 \x01(\r\x12\x12\n\nright_head\x18\x08 \x01(\r\x12\x13\n\x0bhigh_height\x18\t \x01(\r\x12\x12\n\nlow_height\x18\n \x01(\r\x12\x14\n\x0c\x63ontrol_mode\x18\x0b \x01(\r\x12\x13\n\x0bmotion_mode\x18\x0c \x01(\r\x12\x12\n\ntime_stamp\x18\r \x01(\x04\"\xa4\x01\n\x06SDKCmd\x12\n\n\x02vx\x18\x03 \x01(\x02\x12\n\n\x02vy\x18\x04 \x01(\x02\x12\n\n\x02vz\x18\x05 \x01(\x02\x12\x10\n\x08yaw_rate\x18\x06 \x01(\x02\x12\x12\n\npitch_rate\x18\x07 \x01(\x02\x12\x11\n\troll_rate\x18\x08 \x01(\x02\x12\x14\n\x0c\x63ontrol_mode\x18\x0b \x01(\r\x12\x13\n\x0bmotion_mode\x18\x0c \x01(\r\x12\x12\n\ntime_stamp\x18\r \x01(\x04\x62\x06proto3'
 )
 
 
@@ -55,63 +55,63 @@ _ROBOTSTATE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='qd_abad', full_name='robot_sdk.pb.RobotState.qd_abad', index=3,
+      name='q_foot', full_name='robot_sdk.pb.RobotState.q_foot', index=3,
       number=4, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='qd_hip', full_name='robot_sdk.pb.RobotState.qd_hip', index=4,
+      name='qd_abad', full_name='robot_sdk.pb.RobotState.qd_abad', index=4,
       number=5, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='qd_knee', full_name='robot_sdk.pb.RobotState.qd_knee', index=5,
+      name='qd_hip', full_name='robot_sdk.pb.RobotState.qd_hip', index=5,
       number=6, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='omega_body', full_name='robot_sdk.pb.RobotState.omega_body', index=6,
+      name='qd_knee', full_name='robot_sdk.pb.RobotState.qd_knee', index=6,
       number=7, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='tau_abad_fb', full_name='robot_sdk.pb.RobotState.tau_abad_fb', index=7,
+      name='qd_foot', full_name='robot_sdk.pb.RobotState.qd_foot', index=7,
       number=8, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='tau_hip_fb', full_name='robot_sdk.pb.RobotState.tau_hip_fb', index=8,
+      name='tau_abad_fb', full_name='robot_sdk.pb.RobotState.tau_abad_fb', index=8,
       number=9, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='tau_knee_fb', full_name='robot_sdk.pb.RobotState.tau_knee_fb', index=9,
+      name='tau_hip_fb', full_name='robot_sdk.pb.RobotState.tau_hip_fb', index=9,
       number=10, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='position', full_name='robot_sdk.pb.RobotState.position', index=10,
+      name='tau_knee_fb', full_name='robot_sdk.pb.RobotState.tau_knee_fb', index=10,
       number=11, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='tau_ff', full_name='robot_sdk.pb.RobotState.tau_ff', index=11,
+      name='tau_foot_fb', full_name='robot_sdk.pb.RobotState.tau_foot_fb', index=11,
       number=12, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -139,21 +139,35 @@ _ROBOTSTATE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='time_stamp', full_name='robot_sdk.pb.RobotState.time_stamp', index=15,
+      name='rpy', full_name='robot_sdk.pb.RobotState.rpy', index=15,
+      number=16, type=2, cpp_type=6, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='time_stamp', full_name='robot_sdk.pb.RobotState.time_stamp', index=16,
       number=17, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='rpy', full_name='robot_sdk.pb.RobotState.rpy', index=16,
+      name='depth', full_name='robot_sdk.pb.RobotState.depth', index=17,
+      number=18, type=2, cpp_type=6, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='position', full_name='robot_sdk.pb.RobotState.position', index=18,
       number=19, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='omega_world', full_name='robot_sdk.pb.RobotState.omega_world', index=17,
+      name='v_world', full_name='robot_sdk.pb.RobotState.v_world', index=19,
       number=20, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -172,7 +186,7 @@ _ROBOTSTATE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=34,
-  serialized_end=354,
+  serialized_end=383,
 )
 
 
@@ -206,35 +220,35 @@ _ROBOTCMD = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='qd_des_abad', full_name='robot_sdk.pb.RobotCmd.qd_des_abad', index=3,
+      name='q_des_foot', full_name='robot_sdk.pb.RobotCmd.q_des_foot', index=3,
       number=4, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='qd_des_hip', full_name='robot_sdk.pb.RobotCmd.qd_des_hip', index=4,
+      name='qd_des_abad', full_name='robot_sdk.pb.RobotCmd.qd_des_abad', index=4,
       number=5, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='qd_des_knee', full_name='robot_sdk.pb.RobotCmd.qd_des_knee', index=5,
+      name='qd_des_hip', full_name='robot_sdk.pb.RobotCmd.qd_des_hip', index=5,
       number=6, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='tau_abad_ff', full_name='robot_sdk.pb.RobotCmd.tau_abad_ff', index=6,
+      name='qd_des_knee', full_name='robot_sdk.pb.RobotCmd.qd_des_knee', index=6,
       number=7, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='tau_hip_ff', full_name='robot_sdk.pb.RobotCmd.tau_hip_ff', index=7,
+      name='qd_des_foot', full_name='robot_sdk.pb.RobotCmd.qd_des_foot', index=7,
       number=8, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -262,28 +276,28 @@ _ROBOTCMD = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='kd_abad', full_name='robot_sdk.pb.RobotCmd.kd_abad', index=11,
+      name='kp_foot', full_name='robot_sdk.pb.RobotCmd.kp_foot', index=11,
       number=12, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='kd_hip', full_name='robot_sdk.pb.RobotCmd.kd_hip', index=12,
+      name='kd_abad', full_name='robot_sdk.pb.RobotCmd.kd_abad', index=12,
       number=13, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='kd_knee', full_name='robot_sdk.pb.RobotCmd.kd_knee', index=13,
+      name='kd_hip', full_name='robot_sdk.pb.RobotCmd.kd_hip', index=13,
       number=14, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='kp_foot', full_name='robot_sdk.pb.RobotCmd.kp_foot', index=14,
+      name='kd_knee', full_name='robot_sdk.pb.RobotCmd.kd_knee', index=14,
       number=15, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -297,21 +311,21 @@ _ROBOTCMD = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='q_des_foot', full_name='robot_sdk.pb.RobotCmd.q_des_foot', index=16,
+      name='tau_abad_ff', full_name='robot_sdk.pb.RobotCmd.tau_abad_ff', index=16,
       number=17, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='qd_des_foot', full_name='robot_sdk.pb.RobotCmd.qd_des_foot', index=17,
+      name='tau_hip_ff', full_name='robot_sdk.pb.RobotCmd.tau_hip_ff', index=17,
       number=18, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='tau_foot_fb', full_name='robot_sdk.pb.RobotCmd.tau_foot_fb', index=18,
+      name='tau_knee_ff', full_name='robot_sdk.pb.RobotCmd.tau_knee_ff', index=18,
       number=19, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -336,12 +350,307 @@ _ROBOTCMD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=357,
-  serialized_end=746,
+  serialized_start=386,
+  serialized_end=775,
+)
+
+
+_HIGHLEVELCMD = _descriptor.Descriptor(
+  name='HighLevelCmd',
+  full_name='robot_sdk.pb.HighLevelCmd',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='vx', full_name='robot_sdk.pb.HighLevelCmd.vx', index=0,
+      number=1, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='vy', full_name='robot_sdk.pb.HighLevelCmd.vy', index=1,
+      number=2, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='roll_rate', full_name='robot_sdk.pb.HighLevelCmd.roll_rate', index=2,
+      number=3, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='pitch_rate', full_name='robot_sdk.pb.HighLevelCmd.pitch_rate', index=3,
+      number=4, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='yaw_rate', full_name='robot_sdk.pb.HighLevelCmd.yaw_rate', index=4,
+      number=5, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='height_rate', full_name='robot_sdk.pb.HighLevelCmd.height_rate', index=5,
+      number=6, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='jump_triger', full_name='robot_sdk.pb.HighLevelCmd.jump_triger', index=6,
+      number=7, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='backflip_triger', full_name='robot_sdk.pb.HighLevelCmd.backflip_triger', index=7,
+      number=8, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='two_leg_stand', full_name='robot_sdk.pb.HighLevelCmd.two_leg_stand', index=8,
+      number=9, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='control_mode', full_name='robot_sdk.pb.HighLevelCmd.control_mode', index=9,
+      number=10, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='enable_control_mode', full_name='robot_sdk.pb.HighLevelCmd.enable_control_mode', index=10,
+      number=11, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=778,
+  serialized_end=1014,
+)
+
+
+_APPCMD = _descriptor.Descriptor(
+  name='AppCmd',
+  full_name='robot_sdk.pb.AppCmd',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='vx', full_name='robot_sdk.pb.AppCmd.vx', index=0,
+      number=3, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='vy', full_name='robot_sdk.pb.AppCmd.vy', index=1,
+      number=4, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='yaw_rate', full_name='robot_sdk.pb.AppCmd.yaw_rate', index=2,
+      number=5, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='pitch_rate', full_name='robot_sdk.pb.AppCmd.pitch_rate', index=3,
+      number=6, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='left_head', full_name='robot_sdk.pb.AppCmd.left_head', index=4,
+      number=7, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='right_head', full_name='robot_sdk.pb.AppCmd.right_head', index=5,
+      number=8, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='high_height', full_name='robot_sdk.pb.AppCmd.high_height', index=6,
+      number=9, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='low_height', full_name='robot_sdk.pb.AppCmd.low_height', index=7,
+      number=10, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='control_mode', full_name='robot_sdk.pb.AppCmd.control_mode', index=8,
+      number=11, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='motion_mode', full_name='robot_sdk.pb.AppCmd.motion_mode', index=9,
+      number=12, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='time_stamp', full_name='robot_sdk.pb.AppCmd.time_stamp', index=10,
+      number=13, type=4, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1017,
+  serialized_end=1230,
+)
+
+
+_SDKCMD = _descriptor.Descriptor(
+  name='SDKCmd',
+  full_name='robot_sdk.pb.SDKCmd',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='vx', full_name='robot_sdk.pb.SDKCmd.vx', index=0,
+      number=3, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='vy', full_name='robot_sdk.pb.SDKCmd.vy', index=1,
+      number=4, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='vz', full_name='robot_sdk.pb.SDKCmd.vz', index=2,
+      number=5, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='yaw_rate', full_name='robot_sdk.pb.SDKCmd.yaw_rate', index=3,
+      number=6, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='pitch_rate', full_name='robot_sdk.pb.SDKCmd.pitch_rate', index=4,
+      number=7, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='roll_rate', full_name='robot_sdk.pb.SDKCmd.roll_rate', index=5,
+      number=8, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='control_mode', full_name='robot_sdk.pb.SDKCmd.control_mode', index=6,
+      number=11, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='motion_mode', full_name='robot_sdk.pb.SDKCmd.motion_mode', index=7,
+      number=12, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='time_stamp', full_name='robot_sdk.pb.SDKCmd.time_stamp', index=8,
+      number=13, type=4, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1233,
+  serialized_end=1397,
 )
 
 DESCRIPTOR.message_types_by_name['RobotState'] = _ROBOTSTATE
 DESCRIPTOR.message_types_by_name['RobotCmd'] = _ROBOTCMD
+DESCRIPTOR.message_types_by_name['HighLevelCmd'] = _HIGHLEVELCMD
+DESCRIPTOR.message_types_by_name['AppCmd'] = _APPCMD
+DESCRIPTOR.message_types_by_name['SDKCmd'] = _SDKCMD
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 RobotState = _reflection.GeneratedProtocolMessageType('RobotState', (_message.Message,), {
@@ -357,6 +666,27 @@ RobotCmd = _reflection.GeneratedProtocolMessageType('RobotCmd', (_message.Messag
   # @@protoc_insertion_point(class_scope:robot_sdk.pb.RobotCmd)
   })
 _sym_db.RegisterMessage(RobotCmd)
+
+HighLevelCmd = _reflection.GeneratedProtocolMessageType('HighLevelCmd', (_message.Message,), {
+  'DESCRIPTOR' : _HIGHLEVELCMD,
+  '__module__' : 'robot_sdk_pb2'
+  # @@protoc_insertion_point(class_scope:robot_sdk.pb.HighLevelCmd)
+  })
+_sym_db.RegisterMessage(HighLevelCmd)
+
+AppCmd = _reflection.GeneratedProtocolMessageType('AppCmd', (_message.Message,), {
+  'DESCRIPTOR' : _APPCMD,
+  '__module__' : 'robot_sdk_pb2'
+  # @@protoc_insertion_point(class_scope:robot_sdk.pb.AppCmd)
+  })
+_sym_db.RegisterMessage(AppCmd)
+
+SDKCmd = _reflection.GeneratedProtocolMessageType('SDKCmd', (_message.Message,), {
+  'DESCRIPTOR' : _SDKCMD,
+  '__module__' : 'robot_sdk_pb2'
+  # @@protoc_insertion_point(class_scope:robot_sdk.pb.SDKCmd)
+  })
+_sym_db.RegisterMessage(SDKCmd)
 
 
 # @@protoc_insertion_point(module_scope)

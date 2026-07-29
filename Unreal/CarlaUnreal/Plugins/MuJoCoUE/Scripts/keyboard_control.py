@@ -265,6 +265,8 @@ class KeyboardController:
     def update(self):
         """根据当前按键状态更新速度并发送手柄事件 (与 sim_launcher KeyListener 一致)"""
         with self.lock:
+            old_vx, old_vy, old_yaw = self.vx, self.vy, self.yaw_rate
+
             # W/S → ABS_Y (sim_launcher: W=-32768, S=+32767)
             if keyboard.is_pressed('w'):
                 self.vx = -32768
@@ -288,6 +290,20 @@ class KeyboardController:
                 self.yaw_rate = 32767
             else:
                 self.yaw_rate = 0
+
+            # 按键状态变化时打印日志
+            if (self.vx, self.vy, self.yaw_rate) != (old_vx, old_vy, old_yaw):
+                keys = []
+                if self.vx == -32768: keys.append('W(前进)')
+                elif self.vx == 32767: keys.append('S(后退)')
+                if self.vy == -32768: keys.append('A(左移)')
+                elif self.vy == 32767: keys.append('D(右移)')
+                if self.yaw_rate == -32768: keys.append('Q(左转)')
+                elif self.yaw_rate == 32767: keys.append('E(右转)')
+                if keys:
+                    print(f"\n  [按键] {' + '.join(keys)}  ABS_Y={self.vx} ABS_X={self.vy} RX={self.yaw_rate}", flush=True)
+                else:
+                    print(f"\n  [松开] 摇杆归零", flush=True)
 
             # 发送摇杆 (左摇杆: X=横移, Y=前后)
             self.gamepad.set_left_stick(self.vy, self.vx)

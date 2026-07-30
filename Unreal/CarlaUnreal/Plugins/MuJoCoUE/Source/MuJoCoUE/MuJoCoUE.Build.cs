@@ -87,13 +87,6 @@ public class MuJoCoUE : ModuleRules
 			string MujocoLibDir = Path.Combine(MUJOCO_ROOT, "lib", "Linux");
 			string UE4BinDirectory = Path.Combine(PluginDirectory, "Binaries", "Linux");
 
-			// Link against the shared library
-			PublicAdditionalLibraries.Add(Path.Combine(MujocoLibDir, "libmujoco.so"));
-
-			// Protobuf 3.12.4 静态库 (与 mc_ctrl 通信)
-			string ProtobufLinuxDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../../Protobuf/Source/ThirdParty/Linux/lib"));
-			PublicAdditionalLibraries.Add(Path.Combine(ProtobufLinuxDir, "libprotobuf.a"));
-
 			// Copy libmujoco.so (all versions) to plugin Binaries/Linux
 			string SoVersioned = Path.Combine(MujocoLibDir, "libmujoco.so.3.3.0");
 			string SoUnversioned = Path.Combine(MujocoLibDir, "libmujoco.so");
@@ -110,8 +103,16 @@ public class MuJoCoUE : ModuleRules
 				File.Copy(SoUnversioned, TargetUnversioned, false);
 			}
 
+			// Link against plugin Binaries dir (so RPATH points to packaged location)
+			PublicAdditionalLibraries.Add(TargetUnversioned);
+
+			// Register runtime dependencies for packaging
 			RuntimeDependencies.Add(TargetVersioned);
 			RuntimeDependencies.Add(TargetUnversioned);
+
+			// Protobuf 3.12.4 static library (mc_ctrl communication)
+			string ProtobufLinuxDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../../Protobuf/Source/ThirdParty/Linux/lib"));
+			PublicAdditionalLibraries.Add(Path.Combine(ProtobufLinuxDir, "libprotobuf.a"));
 		}
 	}
 }

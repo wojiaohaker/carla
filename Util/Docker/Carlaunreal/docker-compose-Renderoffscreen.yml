@@ -1,6 +1,6 @@
-# CarlaUnreal 渲染模式 (有窗口显示)
-# 启动: sudo UID=$(id -u) GID=$(id -g) docker compose up -d
-# 停止: sudo docker compose down
+# CarlaUnreal 无渲染模式 (RenderOffScreen)
+# 启动: sudo UID=$(id -u) GID=$(id -g) docker compose -f docker-compose-Renderoffscreen.yml up -d
+# 停止: sudo docker compose -f docker-compose-Renderoffscreen.yml down
 
 services:
   # 实例1: 端口 2000(RPC) / 2001(Streaming) / 2002(Secondary)
@@ -18,7 +18,7 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-    command: bash Linux/CarlaUnreal.sh -nosound --ros2 -carla-port=2000
+    command: bash Linux/CarlaUnreal.sh -nosound -RenderOffScreen --ros2 -carla-port=2000
     restart: unless-stopped
 
   # 实例2: 端口 2010(RPC) / 2011(Streaming) / 2012(Secondary)
@@ -37,5 +37,5 @@ services:
   #     - NVIDIA_DRIVER_CAPABILITIES=all
   #   volumes:
   #     - /tmp/.X11-unix:/tmp/.X11-unix:rw
-  #   command: bash Linux/CarlaUnreal.sh -nosound --ros2 -carla-port=2010
+  #   command: bash Linux/CarlaUnreal.sh -nosound -RenderOffScreen --ros2 -carla-port=2010
   #   restart: unless-stopped

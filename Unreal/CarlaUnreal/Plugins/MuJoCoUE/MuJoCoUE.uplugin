@@ -15,6 +15,16 @@
 	"IsExperimentalVersion": false,
 	"EnabledByDefault": true,
 	"Installed": false,
+	"Plugins": [
+		{
+			"Name": "ProceduralMeshComponent",
+			"Enabled": true
+		},
+		{
+			"Name": "Protobuf",
+			"Enabled": true
+		}
+	],
 	"Modules": [
 		{
 			"Name": "MuJoCoUE",

@@ -94,17 +94,24 @@ public class MuJoCoUE : ModuleRules
 			string ProtobufLinuxDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../../Protobuf/Source/ThirdParty/Linux/lib"));
 			PublicAdditionalLibraries.Add(Path.Combine(ProtobufLinuxDir, "libprotobuf.a"));
 
-			// Copy libmujoco.so to plugin Binaries/Linux if not present
-			string SoSourcePath = Path.Combine(MujocoLibDir, "libmujoco.so.3.3.0");
-			string SoTargetPath = Path.Combine(UE4BinDirectory, "libmujoco.so");
-			if (!File.Exists(SoTargetPath))
+			// Copy libmujoco.so (all versions) to plugin Binaries/Linux
+			string SoVersioned = Path.Combine(MujocoLibDir, "libmujoco.so.3.3.0");
+			string SoUnversioned = Path.Combine(MujocoLibDir, "libmujoco.so");
+			string TargetVersioned = Path.Combine(UE4BinDirectory, "libmujoco.so.3.3.0");
+			string TargetUnversioned = Path.Combine(UE4BinDirectory, "libmujoco.so");
+			if (!File.Exists(TargetVersioned))
 			{
 				Directory.CreateDirectory(UE4BinDirectory);
-				Console.WriteLine("[MuJoCoUE] Copy " + SoSourcePath + " -> " + SoTargetPath);
-				File.Copy(SoSourcePath, SoTargetPath, false);
+				Console.WriteLine("[MuJoCoUE] Copy " + SoVersioned + " -> " + TargetVersioned);
+				File.Copy(SoVersioned, TargetVersioned, false);
+			}
+			if (!File.Exists(TargetUnversioned))
+			{
+				File.Copy(SoUnversioned, TargetUnversioned, false);
 			}
 
-			RuntimeDependencies.Add(SoTargetPath);
+			RuntimeDependencies.Add(TargetVersioned);
+			RuntimeDependencies.Add(TargetUnversioned);
 		}
 	}
 }

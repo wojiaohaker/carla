@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  carla1:
+    image: carla:0.10.0
+    container_name: carla1
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    ports:
+      - "2000:2000"   # RPC
+      - "2001:2001"   # Streaming
+      - "2002:2002"   # Secondary
+    command: ./CarlaUnreal.sh -RenderOffScreen -carla-port=2000
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  carla2:
+    image: carla:0.10.0
+    container_name: carla2
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    ports:
+      - "2010:2010"   # RPC
+      - "2011:2011"   # Streaming
+      - "2012:2012"   # Secondary
+    command: ./CarlaUnreal.sh -RenderOffScreen -carla-port=2010
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped

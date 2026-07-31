@@ -23,19 +23,19 @@ services:
 
   # 实例2: 端口 2010(RPC) / 2011(Streaming) / 2012(Secondary)
   # 需要时取消注释即可
-  # carla2:
-  #   image: carla:0.10.0
-  #   container_name: carla2
-  #   runtime: nvidia
-  #   network_mode: host
-  #   ipc: host
-  #   user: "${UID:-1000}:${GID:-1000}"
-  #   environment:
-  #     - DISPLAY=${DISPLAY}
-  #     - QT_X11_NO_MITSHM=1
-  #     - NVIDIA_VISIBLE_DEVICES=all
-  #     - NVIDIA_DRIVER_CAPABILITIES=all
-  #   volumes:
-  #     - /tmp/.X11-unix:/tmp/.X11-unix:rw
-  #   command: bash Linux/CarlaUnreal.sh -nosound --ros2 -carla-port=2010
-  #   restart: unless-stopped
+  carla2:
+    image: carla:0.10.0
+    container_name: carla2
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    command: bash Linux/CarlaUnreal.sh -nosound --ros2 -carla-port=2010
+    restart: unless-stopped

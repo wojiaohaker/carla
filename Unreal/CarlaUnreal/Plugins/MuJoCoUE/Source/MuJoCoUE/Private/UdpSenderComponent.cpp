@@ -4,6 +4,7 @@
 #include "Interfaces/IPv4/IPv4Endpoint.h"
 #include "Common/UdpSocketBuilder.h"
 #include "robot_sdk.pb.h"
+#include <time.h>
 
 DEFINE_LOG_CATEGORY_STATIC(LogUdpSender, Log, All);
 
@@ -26,6 +27,9 @@ UUdpSenderComponent::~UUdpSenderComponent()
 void UUdpSenderComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	// Disable auto-send: MuJoCoSimulation calls UpdateState()+SendState() explicitly
+	// after each physics step. Auto-send would send empty/stale packets from TickComponent.
+	bAutoSend = false;
 	InitSocket();
 }
 
@@ -78,7 +82,7 @@ bool UUdpSenderComponent::InitSocket()
 
 	bSocketReady = true;
 
-	UE_LOG(LogUdpSender, Log,
+	UE_LOG(LogUdpSender, Warning,
 		TEXT("UdpSender: Socket ready, sending Protobuf RobotState to %s:%d."),
 		*TargetIP, TargetPort);
 
@@ -185,18 +189,16 @@ void UUdpSenderComponent::UpdateState(
 		}
 	}
 
-	// RPY euler angles
-	if (RPY.Num() >= 3)
-	{
-		StateMsg->clear_rpy();
-		for (int32 i = 0; i < 3; i++)
-		{
-			StateMsg->add_rpy(RPY[i]);
-		}
-	}
+	// RPY euler angles — NOT sent by Matrix UE (field 16 absent in 303-byte packet).
+	// Omit to match exact wire format mc_ctrl expects.
+	// if (RPY.Num() >= 3) { StateMsg->clear_rpy(); ... }
 
-	// Timestamp in nanoseconds
-	uint64 NowNs = static_cast<uint64>(FPlatformTime::Seconds() * 1e9);
+	// Timestamp in nanoseconds — MUST use CLOCK_REALTIME to match mc_ctrl's time base.
+	// Matrix UE sends wall-clock time (since epoch), mc_ctrl compares with CLOCK_REALTIME.
+	// CLOCK_MONOTONIC (since boot) differs by system uptime → data rejected as stale.
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	uint64 NowNs = static_cast<uint64>(ts.tv_sec) * 1000000000ULL + static_cast<uint64>(ts.tv_nsec);
 	StateMsg->set_time_stamp(NowNs);
 
 	// World position [x, y, z]
@@ -224,11 +226,28 @@ bool UUdpSenderComponent::SendState()
 {
 	if (!bSocketReady || !SenderSocket || !TargetAddr.IsValid())
 	{
+		// Throttled failure log
+		static int32 FailDiagCounter = 0;
+		if (++FailDiagCounter >= 500)
+		{
+			FailDiagCounter = 0;
+			UE_LOG(LogUdpSender, Error, TEXT("[UDP-SEND-FAIL] bSocketReady=%d, SenderSocket=%s, TargetAddr=%s"),
+				bSocketReady ? 1 : 0,
+				SenderSocket ? TEXT("valid") : TEXT("NULL"),
+				TargetAddr.IsValid() ? TEXT("valid") : TEXT("invalid"));
+		}
 		return false;
 	}
 
 	// Serialize protobuf message to byte array (avoid std::string ABI mismatch)
 	const int32 MsgSize = StateMsg->ByteSizeLong();
+
+	// Guard: don't send empty messages (no data populated yet)
+	if (MsgSize <= 0)
+	{
+		return false;
+	}
+
 	TArray<uint8> Buffer;
 	Buffer.AddUninitialized(MsgSize);
 
@@ -249,8 +268,25 @@ bool UUdpSenderComponent::SendState()
 	if (bSuccess && BytesSent == MsgSize)
 	{
 		TotalPacketsSent++;
+
+		// Throttled success diagnostic (every ~1000 packets)
+		static int32 SuccessDiagCounter = 0;
+		if (++SuccessDiagCounter >= 1000)
+		{
+			SuccessDiagCounter = 0;
+			UE_LOG(LogUdpSender, Warning, TEXT("[UDP-SEND-OK] MsgSize=%d, BytesSent=%d, TotalSent=%lld, target=%s:%d"),
+				MsgSize, BytesSent, TotalPacketsSent, *TargetIP, TargetPort);
+		}
 		return true;
 	}
 
+	// Throttled send-failure log
+	static int32 SendFailCounter = 0;
+	if (++SendFailCounter >= 500)
+	{
+		SendFailCounter = 0;
+		UE_LOG(LogUdpSender, Error, TEXT("[UDP-SEND-FAIL] SendTo failed: bSuccess=%d, BytesSent=%d, MsgSize=%d"),
+			bSuccess ? 1 : 0, BytesSent, MsgSize);
+	}
 	return false;
 }

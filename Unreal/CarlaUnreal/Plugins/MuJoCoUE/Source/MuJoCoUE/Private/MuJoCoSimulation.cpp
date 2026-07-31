@@ -270,19 +270,19 @@ void AMuJoCoSimulation::BeginPlay()
 	LoadModel(XmlSourcePath);
 	if (mModel)
 	{
-		// Set initial FLAT pose (Matrix Image 1: belly down, legs splayed outward)
+		// Set initial LIEDOWN pose so mc_ctrl's FK sees low body_height (~0.05).
+		// Joint angles from xg-user-parameters.yaml: hip_liedown=1.4, knee_liedown=-2.4
+		// IMPORTANT: mc_ctrl computes body_height via FK(joint_angles), NOT from base xpos.
+		// Simply letting the robot fall (zero torque) drops the base but joints stay
+		// straight → FK height remains ~0.37 → STANDUP FSM stuck.
 		if (mModel->nq >= 19) // 7 (freejoint) + 12 joints
 		{
-			mData->qpos[2] = 0.15; // body z: flat on ground
-
-			// Joint order: FAR(ABAD,HIP,KNEE), FBL, RAR, RBL
-			// ABAD sign: right legs (FAR=0, RAR=2) negative, left legs (FBL=1, RBL=3) positive
-			const float AbadInit[4] = { -0.4f, 0.4f, -0.4f, 0.4f };
+			mData->qpos[2] = 0.10; // base z: low, near ground
 			for (int j = 0; j < 4; j++)
 			{
-				mData->qpos[7 + j*3 + 0] = AbadInit[j]; // ABAD splayed
-				mData->qpos[7 + j*3 + 1] = 0.2f;        // HIP slightly bent
-				mData->qpos[7 + j*3 + 2] = -0.4f;       // KNEE slightly bent
+				mData->qpos[7 + j*3 + 0] = 0.0f;   // ABAD = 0
+				mData->qpos[7 + j*3 + 1] = 1.4f;   // HIP  = 1.4 (liedown)
+				mData->qpos[7 + j*3 + 2] = -2.4f;  // KNEE = -2.4 (liedown)
 			}
 		}
 		mj_forward(mModel, mData);
@@ -291,10 +291,21 @@ void AMuJoCoSimulation::BeginPlay()
 		ConvertMuJoCoModelToProceduralMeshes(mModel, this);
 		GenerateMeshes(_info);
 
-		// Start simulation immediately (passive mode, robot stays in crouch)
+		// Start simulation immediately (passive mode, robot collapses under gravity)
+		SimStartWallTime = FPlatformTime::Seconds();
 		StartSimulation();
 
-		UE_LOG(LogTemp, Warning, TEXT("MuJoCo: Started in crouch pose. Press U=Stand, Space=LieDown."));
+		UE_LOG(LogTemp, Warning, TEXT("MuJoCo: Started in LIEDOWN pose (HIP=1.4 KNEE=-2.4). %.1fs before mc_ctrl."), UDP_STARTUP_DELAY);
+		UE_LOG(LogTemp, Warning, TEXT("[INIT-DIAG] UdpSender=%s, UdpReceiver=%s, bUdpControlEnabled=%d, bSimulationRunning=%d"),
+			UdpSender ? TEXT("valid") : TEXT("NULL"),
+			UdpReceiver ? TEXT("valid") : TEXT("NULL"),
+			bUdpControlEnabled ? 1 : 0,
+			bSimulationRunning ? 1 : 0);
+		if (UdpSender)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[INIT-DIAG] UdpSender: bSocketReady=%d, TargetIP=%s, TargetPort=%d"),
+				UdpSender->bSocketReady ? 1 : 0, *UdpSender->TargetIP, UdpSender->TargetPort);
+		}
 	}
 }
 
@@ -396,7 +407,30 @@ void AMuJoCoSimulation::SimulateMuJoCo(float DeltaTime)
 		// Gate: only apply UDP when mc_ctrl is in ACTIVE mode (Kp > threshold)
 		// mc_ctrl sends low/zero Kp in damping/idle mode before user presses U
 		bool bUdpActive = false;
-		if (bUdpControlEnabled && UdpReceiver && UdpReceiver->LastCommand.bValid)
+
+		// Startup grace period: let robot collapse under gravity before mc_ctrl PD takes over.
+		// Without this, mc_ctrl sends Kp=80 immediately and holds the robot standing,
+		// so the STANDUP FSM never sees the collapsed pose it requires.
+		bool bInStartupDelay = (FPlatformTime::Seconds() - SimStartWallTime) < UDP_STARTUP_DELAY;
+
+		if (bInStartupDelay)
+		{
+			// Passive: zero torque, let gravity collapse the robot
+			for (int i = 0; i < mModel->nu && i < NUM_JOINTS; i++)
+			{
+				mData->ctrl[i] = 0.0;
+			}
+			// Log body height at end of startup delay for diagnostics
+			static bool bLoggedCollapse = false;
+			if (!bLoggedCollapse && (FPlatformTime::Seconds() - SimStartWallTime) >= UDP_STARTUP_DELAY - 0.05)
+			{
+				bLoggedCollapse = true;
+				int baseBody = 1;
+				UE_LOG(LogTemp, Warning, TEXT("[Startup] Delay ended. body z=%.4f (should be ~0.05 collapsed)"),
+					static_cast<float>(mData->xpos[baseBody * 3 + 2]));
+			}
+		}
+		else if (bUdpControlEnabled && UdpReceiver && UdpReceiver->LastCommand.bValid)
 		{
 			double age = FPlatformTime::Seconds() - UdpReceiver->LastCommand.ReceiveTime;
 			if (age < UDP_CMD_TIMEOUT)
@@ -451,10 +485,37 @@ void AMuJoCoSimulation::SimulateMuJoCo(float DeltaTime)
 
 		mj_step(mModel, mData);
 
-		// Send state feedback to mc_ctrl after each physics step
-		if (bUdpControlEnabled && UdpSender)
+		// Send state feedback to mc_ctrl after each physics step.
+		// IMPORTANT: suppress during startup delay so mc_ctrl never sees the
+		// initial standing pose.  mc_ctrl's STANDUP FSM checks body_height at
+		// first reception; if it sees 0.37 (standing) it gets stuck.
+		// After the delay the robot is collapsed (~0.05) — matching Matrix UE.
+		if (bUdpControlEnabled && UdpSender && !bInStartupDelay)
 		{
 			SendStateToMcCtrl();
+
+			// Throttled send-path diagnostic (every ~500 calls ≈ 1s at 500Hz)
+			static int32 SendDiagCounter = 0;
+			if (++SendDiagCounter >= 500)
+			{
+				SendDiagCounter = 0;
+				UE_LOG(LogTemp, Warning, TEXT("[SEND-DIAG] SendStateToMcCtrl called. UdpSender->TotalPacketsSent=%lld, bSocketReady=%d"),
+					UdpSender->TotalPacketsSent, UdpSender->bSocketReady ? 1 : 0);
+			}
+		}
+		else
+		{
+			// Throttled diagnostic for WHY we're not sending (every ~500 steps)
+			static int32 NoSendDiagCounter = 0;
+			if (++NoSendDiagCounter >= 500)
+			{
+				NoSendDiagCounter = 0;
+				UE_LOG(LogTemp, Warning, TEXT("[SEND-DIAG] NOT sending: bUdpControlEnabled=%d, UdpSender=%s, bInStartupDelay=%d (elapsed=%.2fs)"),
+					bUdpControlEnabled ? 1 : 0,
+					UdpSender ? TEXT("valid") : TEXT("NULL"),
+					bInStartupDelay ? 1 : 0,
+					FPlatformTime::Seconds() - SimStartWallTime);
+			}
 		}
 	}
 
@@ -493,6 +554,19 @@ bool AMuJoCoSimulation::LoadModel(FString Xml)
 void AMuJoCoSimulation::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Throttled tick diagnostic (every ~300 frames ≈ 5s at 60fps)
+	static int32 TickDiagCounter = 0;
+	if (++TickDiagCounter >= 300)
+	{
+		TickDiagCounter = 0;
+		UE_LOG(LogTemp, Warning, TEXT("[TICK-DIAG] bSimulationRunning=%d, mData=%s, mModel=%s, DeltaTime=%.4f"),
+			bSimulationRunning ? 1 : 0,
+			mData ? TEXT("valid") : TEXT("NULL"),
+			mModel ? TEXT("valid") : TEXT("NULL"),
+			DeltaTime);
+	}
+
 	if (bSimulationRunning)
 		SimulateMuJoCo(DeltaTime);
 }
@@ -1142,5 +1216,14 @@ void AMuJoCoSimulation::SendStateToMcCtrl()
 	VWorld[2] = static_cast<float>(mData->cvel[baseBody * 6 + 5]);
 
 	UdpSender->UpdateState(JointPos, JointVel, JointTau, Quat, Gyro, Acc, RPY, Position, VWorld);
-	UdpSender->SendState();
+	bool bSent = UdpSender->SendState();
+
+	// Throttled detailed data diagnostic (every ~500 calls)
+	static int32 DataDiagCounter = 0;
+	if (++DataDiagCounter >= 500)
+	{
+		DataDiagCounter = 0;
+		UE_LOG(LogTemp, Warning, TEXT("[DATA-DIAG] bSent=%d hip[0]=%.3f knee[0]=%.3f pos_z=%.4f quat_w=%.3f"),
+			bSent ? 1 : 0, JointPos[4], JointPos[8], Position[2], Quat[0]);
+	}
 }

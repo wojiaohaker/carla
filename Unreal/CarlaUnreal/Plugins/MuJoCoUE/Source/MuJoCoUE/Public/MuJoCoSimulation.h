@@ -222,6 +222,13 @@ public:
 	/** @brief Timeout (s) before UDP commands are considered stale */
 	static constexpr float UDP_CMD_TIMEOUT = 0.1f;
 
+	/** @brief Startup grace period (s): ignore mc_ctrl PD so robot collapses under gravity first.
+	 *  Matrix UE behaves the same — robot is already collapsed before mc_ctrl takes over. */
+	static constexpr float UDP_STARTUP_DELAY = 3.0f;
+
+	/** @brief Wall-clock time when simulation started (for startup delay) */
+	double SimStartWallTime = 0.0;
+
 	/** @brief Gain ramp duration (s) when UDP control first activates. Prevents launch impulse. */
 	static constexpr float UDP_GAIN_RAMP_DURATION = 1.0f;
 

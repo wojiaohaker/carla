@@ -2,10 +2,28 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "HAL/CriticalSection.h"
 #include "UdpReceiverComponent.generated.h"
 
 class FSocket;
 class FUdpSocketReceiver;
+
+// ==================== Parse Mode ====================
+
+/**
+ * @brief Determines what protobuf message type to parse from incoming UDP packets.
+ */
+UENUM(BlueprintType)
+enum class EUdpParseMode : uint8
+{
+	/** Internal physics mode: parse mc_ctrl RobotCmd (joint targets, PD gains) */
+	ParseRobotCmd   UMETA(DisplayName = "RobotCmd (mc_ctrl)"),
+
+	/** External physics mode: parse mujoco_sim RobotState (joint positions, IMU, pose) */
+	ParseRobotState UMETA(DisplayName = "RobotState (mujoco_sim)")
+};
+
+// ==================== RobotCmd Data ====================
 
 /**
  * @brief Parsed command data from mc_ctrl RobotCmd protobuf packet.
@@ -44,13 +62,80 @@ struct FUdpCommandData
 	bool bValid = false;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUdpCommandReceived, const FUdpCommandData&, CommandData);
+// ==================== RobotState Data ====================
 
 /**
- * @brief UDP Receiver Component for Matrix mc_ctrl Protobuf protocol.
+ * @brief Parsed RobotState data from mujoco_sim UDP packet.
  *
- * Listens on port 25002 (cmd_port) for Protobuf-serialized RobotCmd packets.
- * Parses joint targets, PD gains, and feedforward torques.
+ * Contains joint positions, velocities, IMU data, and base pose
+ * received from the external MuJoCo physics simulation.
+ */
+USTRUCT(BlueprintType)
+struct FUdpStateData
+{
+	GENERATED_BODY()
+
+	/** 4 ABAD joint angles (rad) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	TArray<float> QAbad;
+
+	/** 4 HIP joint angles (rad) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	TArray<float> QHip;
+
+	/** 4 KNEE joint angles (rad) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	TArray<float> QKnee;
+
+	/** 4 ABAD joint velocities (rad/s) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	TArray<float> QdAbad;
+
+	/** 4 HIP joint velocities (rad/s) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	TArray<float> QdHip;
+
+	/** 4 KNEE joint velocities (rad/s) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	TArray<float> QdKnee;
+
+	/** Body quaternion [w, x, y, z] */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	TArray<float> Quat;
+
+	/** Body world position [x, y, z] (m) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	TArray<float> Position;
+
+	/** Gyroscope (body frame) [wx, wy, wz] (rad/s) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	TArray<float> Gyro;
+
+	/** Accelerometer (body frame) [ax, ay, az] (m/s^2) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	TArray<float> Acc;
+
+	/** Timestamp when this packet was received (FPlatformTime) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	double ReceiveTime = 0.0;
+
+	/** Whether this packet contains valid parsed data */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP State")
+	bool bValid = false;
+};
+
+// ==================== Delegates ====================
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUdpCommandReceived, const FUdpCommandData&, CommandData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUdpStateReceived, const FUdpStateData&, StateData);
+
+// ==================== Component ====================
+
+/**
+ * @brief Unified UDP Receiver Component supporting both RobotCmd and RobotState parsing.
+ *
+ * - ParseRobotCmd mode: Listens on port 25002 for mc_ctrl RobotCmd (internal physics).
+ * - ParseRobotState mode: Listens on port 25001 for mujoco_sim RobotState (external physics).
  */
 UCLASS(ClassGroup = "MuJoCo", meta = (BlueprintSpawnableComponent))
 class MUJOCOUE_API UUdpReceiverComponent : public UActorComponent
@@ -62,7 +147,11 @@ public:
 
 	// ---- Configuration ----
 
-	/** UDP port to listen on. Matrix cmd_port = 25002. */
+	/** Parse mode: RobotCmd (mc_ctrl) or RobotState (mujoco_sim) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Receiver")
+	EUdpParseMode ParseMode = EUdpParseMode::ParseRobotCmd;
+
+	/** UDP port to listen on. Default: 25002 (RobotCmd) or 25001 (RobotState). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Receiver")
 	int32 ListenPort = 25002;
 
@@ -74,15 +163,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Receiver")
 	bool bAutoStart = true;
 
-	/** Whether to process data on game thread */
+	/** Whether to process data on game thread (only for RobotCmd mode) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Receiver")
 	bool bProcessOnGameThread = true;
 
 	// ---- Events ----
 
-	/** Broadcast when a valid RobotCmd is received and parsed */
+	/** Broadcast when a valid RobotCmd is received (ParseRobotCmd mode) */
 	UPROPERTY(BlueprintAssignable, Category = "UDP Receiver|Events")
 	FOnUdpCommandReceived OnCommandReceived;
+
+	/** Broadcast when a valid RobotState is received (ParseRobotState mode) */
+	UPROPERTY(BlueprintAssignable, Category = "UDP Receiver|Events")
+	FOnUdpStateReceived OnStateReceived;
 
 	// ---- Runtime State ----
 
@@ -90,17 +183,25 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "UDP Receiver|State")
 	bool bIsListening = false;
 
-	/** Last received command data (cached for polling) */
+	/** Last received command data (ParseRobotCmd mode) */
 	UPROPERTY(BlueprintReadOnly, Category = "UDP Receiver|State")
 	FUdpCommandData LastCommand;
+
+	/** Last received state data (ParseRobotState mode) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP Receiver|State")
+	FUdpStateData LastState;
 
 	/** Total packets received since start */
 	UPROPERTY(BlueprintReadOnly, Category = "UDP Receiver|State")
 	int64 TotalPacketsReceived = 0;
 
-	/** Total valid commands parsed */
+	/** Total valid commands parsed (ParseRobotCmd mode) */
 	UPROPERTY(BlueprintReadOnly, Category = "UDP Receiver|State")
 	int64 TotalCommandsParsed = 0;
+
+	/** Total valid states parsed (ParseRobotState mode) */
+	UPROPERTY(BlueprintReadOnly, Category = "UDP Receiver|State")
+	int64 TotalStatesParsed = 0;
 
 	// ---- Functions ----
 
@@ -113,6 +214,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "UDP Receiver")
 	FUdpCommandData GetLastCommand() const { return LastCommand; }
 
+	UFUNCTION(BlueprintPure, Category = "UDP Receiver")
+	FUdpStateData GetLastState() const { return LastState; }
+
+	/** Thread-safe: get latest state (safe to call from game thread) */
+	FUdpStateData GetLatestState();
+
+	/** Set parse mode and adjust default port accordingly */
+	void SetParseMode(EUdpParseMode Mode);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -120,7 +230,11 @@ protected:
 private:
 	void HandleDataReceived(const TArray<uint8>& Data, const FString& SenderIP, int32 SenderPort);
 	bool ParseProtobufCommand(const TArray<uint8>& Data, FUdpCommandData& OutData);
+	bool ParseProtobufState(const TArray<uint8>& Data, FUdpStateData& OutData);
 
 	FSocket* ReceiverSocket = nullptr;
 	FUdpSocketReceiver* UdpReceiver = nullptr;
+
+	/** Mutex for thread-safe state access (ParseRobotState mode) */
+	FCriticalSection StateMutex;
 };

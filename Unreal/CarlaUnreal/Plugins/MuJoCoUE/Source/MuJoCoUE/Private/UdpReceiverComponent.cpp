@@ -15,6 +15,20 @@ UUdpReceiverComponent::UUdpReceiverComponent()
 	bAutoActivate = true;
 }
 
+void UUdpReceiverComponent::SetParseMode(EUdpParseMode Mode)
+{
+	ParseMode = Mode;
+	// Adjust default port if it was still the old default
+	if (Mode == EUdpParseMode::ParseRobotState && ListenPort == 25002)
+	{
+		ListenPort = 25001;
+	}
+	else if (Mode == EUdpParseMode::ParseRobotCmd && ListenPort == 25001)
+	{
+		ListenPort = 25002;
+	}
+}
+
 void UUdpReceiverComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -50,7 +64,11 @@ bool UUdpReceiverComponent::StartListening()
 
 	FIPv4Endpoint Endpoint(Addr, ListenPort);
 
-	ReceiverSocket = FUdpSocketBuilder(TEXT("McCtrlCmdReceiver"))
+	FString SocketName = (ParseMode == EUdpParseMode::ParseRobotState)
+		? TEXT("MujocoSimStateReceiver")
+		: TEXT("McCtrlCmdReceiver");
+
+	ReceiverSocket = FUdpSocketBuilder(*SocketName)
 		.AsNonBlocking()
 		.AsReusable()
 		.BoundToEndpoint(Endpoint)
@@ -87,8 +105,9 @@ bool UUdpReceiverComponent::StartListening()
 
 	bIsListening = true;
 
+	const TCHAR* ModeStr = (ParseMode == EUdpParseMode::ParseRobotState) ? TEXT("RobotState") : TEXT("RobotCmd");
 	UE_LOG(LogUdpReceiver, Log,
-		TEXT("UdpReceiver: Listening on port %d for Protobuf RobotCmd."), ListenPort);
+		TEXT("UdpReceiver: Listening on port %d for Protobuf %s."), ListenPort, ModeStr);
 
 	return true;
 }
@@ -122,9 +141,42 @@ void UUdpReceiverComponent::HandleDataReceived(const TArray<uint8>& Data, const 
 {
 	TotalPacketsReceived++;
 
-	if (bProcessOnGameThread)
+	if (ParseMode == EUdpParseMode::ParseRobotState)
 	{
-		AsyncTask(ENamedThreads::GameThread, [this, Data, SenderPort]()
+		// ---- RobotState mode: parse on receive thread, protect with mutex ----
+		FUdpStateData StateData;
+		if (ParseProtobufState(Data, StateData))
+		{
+			StateData.ReceiveTime = FPlatformTime::Seconds();
+			StateData.bValid = true;
+
+			{
+				FScopeLock Lock(&StateMutex);
+				LastState = StateData;
+			}
+			TotalStatesParsed++;
+			OnStateReceived.Broadcast(StateData);
+		}
+	}
+	else
+	{
+		// ---- RobotCmd mode: optionally marshal to game thread ----
+		if (bProcessOnGameThread)
+		{
+			AsyncTask(ENamedThreads::GameThread, [this, Data, SenderPort]()
+			{
+				FUdpCommandData CmdData;
+				if (ParseProtobufCommand(Data, CmdData))
+				{
+					CmdData.ReceiveTime = FPlatformTime::Seconds();
+					CmdData.bValid = true;
+					LastCommand = CmdData;
+					TotalCommandsParsed++;
+					OnCommandReceived.Broadcast(CmdData);
+				}
+			});
+		}
+		else
 		{
 			FUdpCommandData CmdData;
 			if (ParseProtobufCommand(Data, CmdData))
@@ -135,21 +187,17 @@ void UUdpReceiverComponent::HandleDataReceived(const TArray<uint8>& Data, const 
 				TotalCommandsParsed++;
 				OnCommandReceived.Broadcast(CmdData);
 			}
-		});
-	}
-	else
-	{
-		FUdpCommandData CmdData;
-		if (ParseProtobufCommand(Data, CmdData))
-		{
-			CmdData.ReceiveTime = FPlatformTime::Seconds();
-			CmdData.bValid = true;
-			LastCommand = CmdData;
-			TotalCommandsParsed++;
-			OnCommandReceived.Broadcast(CmdData);
 		}
 	}
 }
+
+FUdpStateData UUdpReceiverComponent::GetLatestState()
+{
+	FScopeLock Lock(&StateMutex);
+	return LastState;
+}
+
+// ==================== RobotCmd Parsing ====================
 
 bool UUdpReceiverComponent::ParseProtobufCommand(const TArray<uint8>& Data, FUdpCommandData& OutData)
 {
@@ -158,7 +206,7 @@ bool UUdpReceiverComponent::ParseProtobufCommand(const TArray<uint8>& Data, FUdp
 	if (!Cmd.ParseFromArray(Data.GetData(), Data.Num()))
 	{
 		UE_LOG(LogUdpReceiver, Verbose,
-			TEXT("UdpReceiver: Protobuf parse failed (%d bytes)."), Data.Num());
+			TEXT("UdpReceiver: Protobuf RobotCmd parse failed (%d bytes)."), Data.Num());
 		return false;
 	}
 
@@ -204,6 +252,81 @@ bool UUdpReceiverComponent::ParseProtobufCommand(const TArray<uint8>& Data, FUdp
 		OutData.KpValues[8 + i] = (Cmd.kp_knee_size() > i) ? Cmd.kp_knee(i) : 0.0f;
 		OutData.KdValues[8 + i] = (Cmd.kd_knee_size() > i) ? Cmd.kd_knee(i) : 0.0f;
 		OutData.TauFF[8 + i] = (Cmd.tau_knee_ff_size() > i) ? Cmd.tau_knee_ff(i) : 0.0f;
+	}
+
+	return true;
+}
+
+// ==================== RobotState Parsing ====================
+
+bool UUdpReceiverComponent::ParseProtobufState(const TArray<uint8>& Data, FUdpStateData& OutData)
+{
+	// Deserialize protobuf RobotState
+	robot_sdk::pb::RobotState StateMsg;
+	if (!StateMsg.ParseFromArray(Data.GetData(), Data.Num()))
+	{
+		UE_LOG(LogUdpReceiver, Verbose,
+			TEXT("UdpReceiver: Protobuf RobotState parse failed (%d bytes)."), Data.Num());
+		return false;
+	}
+
+	// Validate minimum field presence
+	if (StateMsg.q_abad_size() < 4 || StateMsg.q_hip_size() < 4 || StateMsg.q_knee_size() < 4)
+	{
+		UE_LOG(LogUdpReceiver, Verbose,
+			TEXT("UdpReceiver: Incomplete RobotState (abad=%d, hip=%d, knee=%d)."),
+			StateMsg.q_abad_size(), StateMsg.q_hip_size(), StateMsg.q_knee_size());
+		return false;
+	}
+
+	// Joint positions
+	OutData.QAbad.SetNum(4);
+	OutData.QHip.SetNum(4);
+	OutData.QKnee.SetNum(4);
+	for (int32 i = 0; i < 4; i++)
+	{
+		OutData.QAbad[i] = StateMsg.q_abad(i);
+		OutData.QHip[i] = StateMsg.q_hip(i);
+		OutData.QKnee[i] = StateMsg.q_knee(i);
+	}
+
+	// Joint velocities
+	OutData.QdAbad.SetNum(4);
+	OutData.QdHip.SetNum(4);
+	OutData.QdKnee.SetNum(4);
+	for (int32 i = 0; i < 4; i++)
+	{
+		OutData.QdAbad[i] = (StateMsg.qd_abad_size() > i) ? StateMsg.qd_abad(i) : 0.0f;
+		OutData.QdHip[i] = (StateMsg.qd_hip_size() > i) ? StateMsg.qd_hip(i) : 0.0f;
+		OutData.QdKnee[i] = (StateMsg.qd_knee_size() > i) ? StateMsg.qd_knee(i) : 0.0f;
+	}
+
+	// Quaternion [w, x, y, z]
+	OutData.Quat.SetNum(4);
+	for (int32 i = 0; i < 4; i++)
+	{
+		OutData.Quat[i] = (StateMsg.quat_size() > i) ? StateMsg.quat(i) : (i == 0 ? 1.0f : 0.0f);
+	}
+
+	// Position [x, y, z]
+	OutData.Position.SetNum(3);
+	for (int32 i = 0; i < 3; i++)
+	{
+		OutData.Position[i] = (StateMsg.position_size() > i) ? StateMsg.position(i) : 0.0f;
+	}
+
+	// Gyroscope
+	OutData.Gyro.SetNum(3);
+	for (int32 i = 0; i < 3; i++)
+	{
+		OutData.Gyro[i] = (StateMsg.gyro_size() > i) ? StateMsg.gyro(i) : 0.0f;
+	}
+
+	// Accelerometer
+	OutData.Acc.SetNum(3);
+	for (int32 i = 0; i < 3; i++)
+	{
+		OutData.Acc[i] = (StateMsg.acc_size() > i) ? StateMsg.acc(i) : 0.0f;
 	}
 
 	return true;

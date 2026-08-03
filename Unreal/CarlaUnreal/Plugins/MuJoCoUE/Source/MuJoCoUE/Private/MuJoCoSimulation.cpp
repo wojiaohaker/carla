@@ -270,6 +270,39 @@ void AMuJoCoSimulation::BeginPlay()
 	LoadModel(XmlSourcePath);
 	if (mModel)
 	{
+		// ---- External Physics Mode: load model for mesh only, no internal physics ----
+		if (bExternalPhysicsMode)
+		{
+			// Still need initial FK to generate meshes at a valid pose
+			mj_forward(mModel, mData);
+
+			_info = ExtractModelInfo(mModel);
+			ConvertMuJoCoModelToProceduralMeshes(mModel, this);
+			GenerateMeshes(_info);
+
+			// Disable internal physics loop
+			bSimulationRunning = false;
+
+			// Disable mc_ctrl UDP control (mujoco_sim handles that)
+			bUdpControlEnabled = false;
+			if (UdpSender) UdpSender->bAutoSend = false;
+
+			// Switch UdpReceiver to RobotState mode (port 25001, parse mujoco_sim state)
+			if (UdpReceiver)
+			{
+				UdpReceiver->StopListening();
+				UdpReceiver->SetParseMode(EUdpParseMode::ParseRobotState);
+				UdpReceiver->bAutoStart = false;
+				UdpReceiver->StartListening();
+			}
+
+			UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] External physics mode ENABLED. UdpReceiver listening on port %d for RobotState."),
+				UdpReceiver ? UdpReceiver->ListenPort : -1);
+			UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] Internal mj_step DISABLED. Rendering driven by UDP RobotState."));
+			return;
+		}
+
+		// ---- Normal (Internal Physics) Mode ----
 		// Set initial LIEDOWN pose so mc_ctrl's FK sees low body_height (~0.05).
 		// Joint angles from xg-user-parameters.yaml: hip_liedown=1.4, knee_liedown=-2.4
 		// IMPORTANT: mc_ctrl computes body_height via FK(joint_angles), NOT from base xpos.
@@ -554,6 +587,13 @@ bool AMuJoCoSimulation::LoadModel(FString Xml)
 void AMuJoCoSimulation::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// External physics mode: render from UDP state, no internal mj_step
+	if (bExternalPhysicsMode)
+	{
+		TickExternalPhysics(DeltaTime);
+		return;
+	}
 
 	// Throttled tick diagnostic (every ~300 frames ≈ 5s at 60fps)
 	static int32 TickDiagCounter = 0;
@@ -1225,5 +1265,92 @@ void AMuJoCoSimulation::SendStateToMcCtrl()
 		DataDiagCounter = 0;
 		UE_LOG(LogTemp, Warning, TEXT("[DATA-DIAG] bSent=%d hip[0]=%.3f knee[0]=%.3f pos_z=%.4f quat_w=%.3f"),
 			bSent ? 1 : 0, JointPos[4], JointPos[8], Position[2], Quat[0]);
+	}
+}
+
+void AMuJoCoSimulation::TickExternalPhysics(float DeltaTime)
+{
+	if (!mData || !mModel || !UdpReceiver)
+		return;
+
+	// Get latest state from mujoco_sim (thread-safe)
+	FUdpStateData State = UdpReceiver->GetLatestState();
+
+	if (!State.bValid)
+	{
+		// No data received yet — wait silently
+		return;
+	}
+
+	// Check staleness
+	double age = FPlatformTime::Seconds() - State.ReceiveTime;
+	if (age > EXT_STATE_TIMEOUT)
+	{
+		// Throttled stale warning
+		if (++ExtDiagCounter >= 300)
+		{
+			ExtDiagCounter = 0;
+			UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] State STALE (age=%.2fs > %.1fs). mujoco_sim may have stopped."),
+				age, EXT_STATE_TIMEOUT);
+		}
+		return;
+	}
+
+	// ---- Write received state into mData->qpos for FK computation ----
+	// qpos layout: [x, y, z, qw, qx, qy, qz, abad0, hip0, knee0, abad1, ...]
+
+	// Base position [x, y, z]
+	if (State.Position.Num() >= 3)
+	{
+		mData->qpos[0] = State.Position[0];
+		mData->qpos[1] = State.Position[1];
+		mData->qpos[2] = State.Position[2];
+	}
+
+	// Base quaternion [w, x, y, z] → qpos[3..6]
+	if (State.Quat.Num() >= 4)
+	{
+		mData->qpos[3] = State.Quat[0]; // w
+		mData->qpos[4] = State.Quat[1]; // x
+		mData->qpos[5] = State.Quat[2]; // y
+		mData->qpos[6] = State.Quat[3]; // z
+	}
+
+	// Joint angles: RobotState has [abad×4, hip×4, knee×4] per type
+	// MuJoCo qpos[7..18] layout: leg0(abad,hip,knee), leg1(abad,hip,knee), ...
+	// Leg order: FAR=0, FBL=1, RAR=2, RBL=3
+	if (State.QAbad.Num() >= 4 && State.QHip.Num() >= 4 && State.QKnee.Num() >= 4)
+	{
+		for (int leg = 0; leg < 4; leg++)
+		{
+			int qposBase = 7 + leg * 3;
+			mData->qpos[qposBase + 0] = State.QAbad[leg];
+			mData->qpos[qposBase + 1] = State.QHip[leg];
+			mData->qpos[qposBase + 2] = State.QKnee[leg];
+		}
+	}
+
+	// ---- Forward Kinematics only (no dynamics) ----
+	mj_kinematics(mModel, mData);
+	mj_comPos(mModel, mData);
+
+	// ---- Update mesh transforms ----
+	if (_info.bodies.size() > 0)
+	{
+		ExtractCurrentState(_info);
+		UpdateSimulationView(_info);
+	}
+
+	// Throttled diagnostic (every ~5s at 60fps)
+	if (++ExtDiagCounter >= 300)
+	{
+		ExtDiagCounter = 0;
+		UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] Rendering OK. pkts=%lld states=%lld pos=(%.3f,%.3f,%.3f) hip[0]=%.3f"),
+			UdpReceiver->TotalPacketsReceived,
+			UdpReceiver->TotalStatesParsed,
+			State.Position.Num() >= 3 ? State.Position[0] : 0.0f,
+			State.Position.Num() >= 3 ? State.Position[1] : 0.0f,
+			State.Position.Num() >= 3 ? State.Position[2] : 0.0f,
+			State.QHip.Num() >= 1 ? State.QHip[0] : 0.0f);
 	}
 }

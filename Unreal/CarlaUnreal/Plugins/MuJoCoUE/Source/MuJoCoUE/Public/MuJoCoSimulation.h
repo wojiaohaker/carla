@@ -205,6 +205,18 @@ public:
 	/** @brief Number of actuated joints */
 	static constexpr int32 NUM_JOINTS = 12;
 
+	// ---- External Physics Mode (mujoco_sim drives, UE renders only) ----
+
+	/** @brief External physics mode: no internal mj_step, receive RobotState from mujoco_sim via UDP and render */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External Physics")
+	bool bExternalPhysicsMode = true;
+
+	/** @brief Timeout (s) before external state is considered stale */
+	static constexpr float EXT_STATE_TIMEOUT = 0.5f;
+
+	/** @brief Counter for throttled external mode diagnostics */
+	int32 ExtDiagCounter = 0;
+
 	// ---- UDP mc_ctrl integration ----
 
 	/** @brief UDP receiver for mc_ctrl commands (port 25002) */
@@ -409,6 +421,12 @@ protected:
 	 * @brief Applies PD control with gait-generated target angles
 	 */
 	void ApplyStandUpControl();
+
+	/**
+	 * @brief External physics mode tick: receive state → FK → render (no mj_step)
+	 * @param DeltaTime Frame delta time
+	 */
+	void TickExternalPhysics(float DeltaTime);
 
 	/**
 	 * @brief Applies PD control using targets received from mc_ctrl via UDP

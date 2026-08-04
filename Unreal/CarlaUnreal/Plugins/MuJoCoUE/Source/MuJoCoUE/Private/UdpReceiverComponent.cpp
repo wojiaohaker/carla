@@ -18,12 +18,16 @@ UUdpReceiverComponent::UUdpReceiverComponent()
 void UUdpReceiverComponent::SetParseMode(EUdpParseMode Mode)
 {
 	ParseMode = Mode;
-	// Adjust default port if it was still the old default
+	// Adjust default port based on mode
 	if (Mode == EUdpParseMode::ParseRobotState && ListenPort == 25002)
 	{
-		ListenPort = 25001;
+		ListenPort = 9999;
 	}
-	else if (Mode == EUdpParseMode::ParseRobotCmd && ListenPort == 25001)
+	else if (Mode == EUdpParseMode::ParseMuJoCoRaw && ListenPort == 25002)
+	{
+		ListenPort = 9999;  // robot_mujoco → UE uses port 9999
+	}
+	else if (Mode == EUdpParseMode::ParseRobotCmd && (ListenPort == 9999))
 	{
 		ListenPort = 25002;
 	}
@@ -64,9 +68,13 @@ bool UUdpReceiverComponent::StartListening()
 
 	FIPv4Endpoint Endpoint(Addr, ListenPort);
 
-	FString SocketName = (ParseMode == EUdpParseMode::ParseRobotState)
-		? TEXT("MujocoSimStateReceiver")
-		: TEXT("McCtrlCmdReceiver");
+	FString SocketName;
+	switch (ParseMode)
+	{
+	case EUdpParseMode::ParseRobotState: SocketName = TEXT("MujocoSimStateReceiver"); break;
+	case EUdpParseMode::ParseMuJoCoRaw:  SocketName = TEXT("MuJoCoRawReceiver"); break;
+	default: SocketName = TEXT("McCtrlCmdReceiver"); break;
+	}
 
 	ReceiverSocket = FUdpSocketBuilder(*SocketName)
 		.AsNonBlocking()
@@ -105,9 +113,15 @@ bool UUdpReceiverComponent::StartListening()
 
 	bIsListening = true;
 
-	const TCHAR* ModeStr = (ParseMode == EUdpParseMode::ParseRobotState) ? TEXT("RobotState") : TEXT("RobotCmd");
+	const TCHAR* ModeStr;
+	switch (ParseMode)
+	{
+	case EUdpParseMode::ParseRobotState: ModeStr = TEXT("RobotState (protobuf)"); break;
+	case EUdpParseMode::ParseMuJoCoRaw:  ModeStr = TEXT("MuJoCo Raw (412 bytes)"); break;
+	default: ModeStr = TEXT("RobotCmd (protobuf)"); break;
+	}
 	UE_LOG(LogUdpReceiver, Log,
-		TEXT("UdpReceiver: Listening on port %d for Protobuf %s."), ListenPort, ModeStr);
+		TEXT("UdpReceiver: Listening on port %d for %s."), ListenPort, ModeStr);
 
 	return true;
 }
@@ -158,6 +172,23 @@ void UUdpReceiverComponent::HandleDataReceived(const TArray<uint8>& Data, const 
 			OnStateReceived.Broadcast(StateData);
 		}
 	}
+	else if (ParseMode == EUdpParseMode::ParseMuJoCoRaw)
+	{
+		// ---- MuJoCo Raw mode: parse 412-byte binary, protect with mutex ----
+		FMuJoCoRawData RawData;
+		if (ParseMuJoCoRawData(Data, RawData))
+		{
+			RawData.ReceiveTime = FPlatformTime::Seconds();
+			RawData.bValid = true;
+
+			{
+				FScopeLock Lock(&MuJoCoRawMutex);
+				LastMuJoCoRaw = RawData;
+			}
+			TotalMuJoCoRawParsed++;
+			OnMuJoCoRawReceived.Broadcast(RawData);
+		}
+	}
 	else
 	{
 		// ---- RobotCmd mode: optionally marshal to game thread ----
@@ -195,6 +226,12 @@ FUdpStateData UUdpReceiverComponent::GetLatestState()
 {
 	FScopeLock Lock(&StateMutex);
 	return LastState;
+}
+
+FMuJoCoRawData UUdpReceiverComponent::GetLatestMuJoCoRaw()
+{
+	FScopeLock Lock(&MuJoCoRawMutex);
+	return LastMuJoCoRaw;
 }
 
 // ==================== RobotCmd Parsing ====================
@@ -327,6 +364,82 @@ bool UUdpReceiverComponent::ParseProtobufState(const TArray<uint8>& Data, FUdpSt
 	for (int32 i = 0; i < 3; i++)
 	{
 		OutData.Acc[i] = (StateMsg.acc_size() > i) ? StateMsg.acc(i) : 0.0f;
+	}
+
+	return true;
+}
+
+// ==================== MuJoCo Raw Binary Parsing ====================
+
+bool UUdpReceiverComponent::ParseMuJoCoRawData(const TArray<uint8>& Data, FMuJoCoRawData& OutData)
+{
+	// Expected: 412 bytes = 8 + 4 + 19*8 + 4 + 18*8 + 4 + 12*8
+	const int32 ExpectedSize = 412;
+	if (Data.Num() < ExpectedSize)
+	{
+		UE_LOG(LogUdpReceiver, Verbose,
+			TEXT("UdpReceiver: MuJoCo Raw too small (%d bytes, expected %d)."), Data.Num(), ExpectedSize);
+		return false;
+	}
+
+	const uint8* Ptr = Data.GetData();
+
+	// offset 0: double sim_time
+	OutData.SimTime = *(const double*)Ptr;
+	Ptr += 8;
+
+	// offset 8: int32 nq
+	int32 nq = *(const int32*)Ptr;
+	Ptr += 4;
+	if (nq != 19 || Data.Num() < 12 + nq * 8 + 4 + 18 * 8 + 4 + 12 * 8)
+	{
+		UE_LOG(LogUdpReceiver, Verbose,
+			TEXT("UdpReceiver: MuJoCo Raw unexpected nq=%d (expected 19)."), nq);
+		return false;
+	}
+
+	// offset 12: 19×double qpos
+	OutData.Qpos.SetNum(nq);
+	for (int i = 0; i < nq; i++)
+	{
+		OutData.Qpos[i] = *(const double*)Ptr;
+		Ptr += 8;
+	}
+
+	// int32 nv
+	int32 nv = *(const int32*)Ptr;
+	Ptr += 4;
+	if (nv != 18)
+	{
+		UE_LOG(LogUdpReceiver, Verbose,
+			TEXT("UdpReceiver: MuJoCo Raw unexpected nv=%d (expected 18)."), nv);
+		return false;
+	}
+
+	// 18×double qvel
+	OutData.Qvel.SetNum(nv);
+	for (int i = 0; i < nv; i++)
+	{
+		OutData.Qvel[i] = *(const double*)Ptr;
+		Ptr += 8;
+	}
+
+	// int32 nu
+	int32 nu = *(const int32*)Ptr;
+	Ptr += 4;
+	if (nu != 12)
+	{
+		UE_LOG(LogUdpReceiver, Verbose,
+			TEXT("UdpReceiver: MuJoCo Raw unexpected nu=%d (expected 12)."), nu);
+		return false;
+	}
+
+	// 12×double tau
+	OutData.Tau.SetNum(nu);
+	for (int i = 0; i < nu; i++)
+	{
+		OutData.Tau[i] = *(const double*)Ptr;
+		Ptr += 8;
 	}
 
 	return true;

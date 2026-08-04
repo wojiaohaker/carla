@@ -205,17 +205,14 @@ public:
 	/** @brief Number of actuated joints */
 	static constexpr int32 NUM_JOINTS = 12;
 
-	// ---- External Physics Mode (mujoco_sim drives, UE renders only) ----
+	// ---- External Physics Mode (Matrix-style): UE is pure renderer for robot_mujoco ----
+	// robot_mujoco runs MuJoCo physics externally, sends qpos/qvel/tau via UDP 9999.
+	// UE receives the state, writes qpos → mj_kinematics() → updates mesh transforms.
+	// No internal mj_step in this mode.
 
-	/** @brief External physics mode: no internal mj_step, receive RobotState from mujoco_sim via UDP and render */
+	/** @brief External physics mode (Matrix-style): UE is pure renderer, robot_mujoco runs physics */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External Physics")
 	bool bExternalPhysicsMode = true;
-
-	/** @brief Timeout (s) before external state is considered stale */
-	static constexpr float EXT_STATE_TIMEOUT = 0.5f;
-
-	/** @brief Counter for throttled external mode diagnostics */
-	int32 ExtDiagCounter = 0;
 
 	// ---- UDP mc_ctrl integration ----
 
@@ -226,6 +223,10 @@ public:
 	/** @brief UDP sender for state feedback to mc_ctrl (port 25001) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UDP Control")
 	UUdpSenderComponent* UdpSender;
+
+	/** @brief UDP receiver for robot_mujoco render state (port 9999, MuJoCo raw format) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "External Physics")
+	UUdpReceiverComponent* UdpRenderReceiver;
 
 	/** @brief Enable UDP control mode (mc_ctrl drives joints, local gait disabled) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UDP Control")
@@ -423,12 +424,6 @@ protected:
 	void ApplyStandUpControl();
 
 	/**
-	 * @brief External physics mode tick: receive state → FK → render (no mj_step)
-	 * @param DeltaTime Frame delta time
-	 */
-	void TickExternalPhysics(float DeltaTime);
-
-	/**
 	 * @brief Applies PD control using targets received from mc_ctrl via UDP
 	 * @param GainScale Gain multiplier [0,1] for activation ramp (prevents launch impulse)
 	 */
@@ -438,6 +433,11 @@ protected:
 	 * @brief Sends current robot state to mc_ctrl via UDP
 	 */
 	void SendStateToMcCtrl();
+
+	/**
+	 * @brief Apply UDP 9999 render state: write qpos → mj_kinematics → update mesh
+	 */
+	void ApplyRenderStateFromUdp();
 
 	/**
 	 * @brief Updates StandUpTargetAngles using trot gait generator

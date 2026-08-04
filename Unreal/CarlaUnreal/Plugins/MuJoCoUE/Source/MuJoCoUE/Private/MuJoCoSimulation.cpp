@@ -253,6 +253,10 @@ AMuJoCoSimulation::AMuJoCoSimulation()
 	UdpReceiver = CreateDefaultSubobject<UUdpReceiverComponent>(TEXT("UdpReceiver"));
 	UdpSender = CreateDefaultSubobject<UUdpSenderComponent>(TEXT("UdpSender"));
 
+	// Create UDP render receiver for robot_mujoco state (port 9999)
+	UdpRenderReceiver = CreateDefaultSubobject<UUdpReceiverComponent>(TEXT("UdpRenderReceiver"));
+	UdpRenderReceiver->bAutoStart = false; // configured in BeginPlay after SetParseMode
+
 	if (HasAnyFlags(RF_ClassDefaultObject))
 	{
 		return;
@@ -270,35 +274,44 @@ void AMuJoCoSimulation::BeginPlay()
 	LoadModel(XmlSourcePath);
 	if (mModel)
 	{
-		// ---- External Physics Mode: load model for mesh only, no internal physics ----
+		// ---- External Physics Mode (Matrix-style): UE is pure renderer ----
+		// robot_mujoco runs MuJoCo physics externally, sends qpos/qvel/tau via UDP 9999.
+		// UE receives the state, writes qpos → mj_kinematics() → updates mesh transforms.
+		// No internal mj_step in this mode.
 		if (bExternalPhysicsMode)
 		{
-			// Still need initial FK to generate meshes at a valid pose
+			// Set initial LIEDOWN pose (same as normal mode for consistency)
+			if (mModel->nq >= 19)
+			{
+				mData->qpos[2] = 0.10;
+				for (int j = 0; j < 4; j++)
+				{
+					mData->qpos[7 + j*3 + 0] = 0.0f;
+					mData->qpos[7 + j*3 + 1] = 1.4f;
+					mData->qpos[7 + j*3 + 2] = -2.4f;
+				}
+			}
 			mj_forward(mModel, mData);
 
 			_info = ExtractModelInfo(mModel);
 			ConvertMuJoCoModelToProceduralMeshes(mModel, this);
 			GenerateMeshes(_info);
 
-			// Disable internal physics loop
-			bSimulationRunning = false;
-
-			// Disable mc_ctrl UDP control (mujoco_sim handles that)
-			bUdpControlEnabled = false;
-			if (UdpSender) UdpSender->bAutoSend = false;
-
-			// Switch UdpReceiver to RobotState mode (port 25001, parse mujoco_sim state)
-			if (UdpReceiver)
+			// Do NOT call StartSimulation() — no internal mj_step in this mode.
+			// Instead, set up UDP 9999 receiver for robot_mujoco render state.
+			if (UdpRenderReceiver)
 			{
-				UdpReceiver->StopListening();
-				UdpReceiver->SetParseMode(EUdpParseMode::ParseRobotState);
-				UdpReceiver->bAutoStart = false;
-				UdpReceiver->StartListening();
+				UdpRenderReceiver->SetParseMode(EUdpParseMode::ParseMuJoCoRaw);
+				UdpRenderReceiver->ListenPort = 9999;
+				UdpRenderReceiver->bAutoStart = false; // configured here, not auto
+				UdpRenderReceiver->StartListening();
 			}
 
-			UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] External physics mode ENABLED. UdpReceiver listening on port %d for RobotState."),
-				UdpReceiver ? UdpReceiver->ListenPort : -1);
-			UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] Internal mj_step DISABLED. Rendering driven by UDP RobotState."));
+			// mc_ctrl UDP control stays enabled (port 25001/25002) for state feedback
+			SimStartWallTime = FPlatformTime::Seconds();
+
+			UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] Matrix-style pure renderer: listening UDP 9999 for robot_mujoco state."));
+			UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] No internal mj_step. Rendering driven by external physics."));
 			return;
 		}
 
@@ -588,10 +601,11 @@ void AMuJoCoSimulation::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// External physics mode: render from UDP state, no internal mj_step
+	// External physics mode (Matrix-style): UE is pure renderer for robot_mujoco
+	// Receive UDP 9999 → write qpos → mj_kinematics() → update mesh
 	if (bExternalPhysicsMode)
 	{
-		TickExternalPhysics(DeltaTime);
+		ApplyRenderStateFromUdp();
 		return;
 	}
 
@@ -1268,89 +1282,69 @@ void AMuJoCoSimulation::SendStateToMcCtrl()
 	}
 }
 
-void AMuJoCoSimulation::TickExternalPhysics(float DeltaTime)
+void AMuJoCoSimulation::ApplyRenderStateFromUdp()
 {
-	if (!mData || !mModel || !UdpReceiver)
+	if (!mModel || !mData || !UdpRenderReceiver)
 		return;
 
-	// Get latest state from mujoco_sim (thread-safe)
-	FUdpStateData State = UdpReceiver->GetLatestState();
+	// Get latest MuJoCo raw state (thread-safe copy)
+	FMuJoCoRawData RawState = UdpRenderReceiver->GetLatestMuJoCoRaw();
 
-	if (!State.bValid)
+	if (!RawState.bValid || RawState.Qpos.Num() < 19)
 	{
-		// No data received yet — wait silently
-		return;
-	}
-
-	// Check staleness
-	double age = FPlatformTime::Seconds() - State.ReceiveTime;
-	if (age > EXT_STATE_TIMEOUT)
-	{
-		// Throttled stale warning
-		if (++ExtDiagCounter >= 300)
+		// No valid data yet — log throttled diagnostic
+		static int32 NoDataCounter = 0;
+		if (++NoDataCounter >= 300) // ~5s at 60fps
 		{
-			ExtDiagCounter = 0;
-			UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] State STALE (age=%.2fs > %.1fs). mujoco_sim may have stopped."),
-				age, EXT_STATE_TIMEOUT);
+			NoDataCounter = 0;
+			UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] Waiting for UDP 9999 data... bIsListening=%d, TotalParsed=%lld"),
+				UdpRenderReceiver->bIsListening, UdpRenderReceiver->TotalMuJoCoRawParsed);
 		}
 		return;
 	}
 
-	// ---- Write received state into mData->qpos for FK computation ----
-	// qpos layout: [x, y, z, qw, qx, qy, qz, abad0, hip0, knee0, abad1, ...]
-
-	// Base position [x, y, z]
-	if (State.Position.Num() >= 3)
+	// Check data freshness (warn if stale > 0.5s)
+	double age = FPlatformTime::Seconds() - RawState.ReceiveTime;
+	if (age > 0.5)
 	{
-		mData->qpos[0] = State.Position[0];
-		mData->qpos[1] = State.Position[1];
-		mData->qpos[2] = State.Position[2];
-	}
-
-	// Base quaternion [w, x, y, z] → qpos[3..6]
-	if (State.Quat.Num() >= 4)
-	{
-		mData->qpos[3] = State.Quat[0]; // w
-		mData->qpos[4] = State.Quat[1]; // x
-		mData->qpos[5] = State.Quat[2]; // y
-		mData->qpos[6] = State.Quat[3]; // z
-	}
-
-	// Joint angles: RobotState has [abad×4, hip×4, knee×4] per type
-	// MuJoCo qpos[7..18] layout: leg0(abad,hip,knee), leg1(abad,hip,knee), ...
-	// Leg order: FAR=0, FBL=1, RAR=2, RBL=3
-	if (State.QAbad.Num() >= 4 && State.QHip.Num() >= 4 && State.QKnee.Num() >= 4)
-	{
-		for (int leg = 0; leg < 4; leg++)
+		static int32 StaleCounter = 0;
+		if (++StaleCounter >= 300)
 		{
-			int qposBase = 7 + leg * 3;
-			mData->qpos[qposBase + 0] = State.QAbad[leg];
-			mData->qpos[qposBase + 1] = State.QHip[leg];
-			mData->qpos[qposBase + 2] = State.QKnee[leg];
+			StaleCounter = 0;
+			UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] UDP 9999 data stale: age=%.2fs"), age);
 		}
+		return;
 	}
 
-	// ---- Forward Kinematics only (no dynamics) ----
+	// Write qpos from UDP into internal mjData
+	for (int i = 0; i < RawState.Qpos.Num() && i < mModel->nq; i++)
+	{
+		mData->qpos[i] = RawState.Qpos[i];
+	}
+
+	// Write qvel (used for diagnostics, not strictly needed for rendering)
+	for (int i = 0; i < RawState.Qvel.Num() && i < mModel->nv; i++)
+	{
+		mData->qvel[i] = RawState.Qvel[i];
+	}
+
+	// Run forward kinematics: compute body positions/quaternions from qpos
 	mj_kinematics(mModel, mData);
-	mj_comPos(mModel, mData);
 
-	// ---- Update mesh transforms ----
-	if (_info.bodies.size() > 0)
-	{
-		ExtractCurrentState(_info);
-		UpdateSimulationView(_info);
-	}
+	// Extract current state (xpos, xquat → UE coordinates) and update mesh transforms
+	ExtractCurrentState(_info);
+	UpdateSimulationView(_info);
 
-	// Throttled diagnostic (every ~5s at 60fps)
-	if (++ExtDiagCounter >= 300)
+	// Throttled render diagnostic (every ~300 frames ≈ 5s at 60fps)
+	static int32 RenderDiagCounter = 0;
+	if (++RenderDiagCounter >= 300)
 	{
-		ExtDiagCounter = 0;
-		UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] Rendering OK. pkts=%lld states=%lld pos=(%.3f,%.3f,%.3f) hip[0]=%.3f"),
-			UdpReceiver->TotalPacketsReceived,
-			UdpReceiver->TotalStatesParsed,
-			State.Position.Num() >= 3 ? State.Position[0] : 0.0f,
-			State.Position.Num() >= 3 ? State.Position[1] : 0.0f,
-			State.Position.Num() >= 3 ? State.Position[2] : 0.0f,
-			State.QHip.Num() >= 1 ? State.QHip[0] : 0.0f);
+		RenderDiagCounter = 0;
+		UE_LOG(LogTemp, Warning, TEXT("[EXT-PHYSICS] Render: sim_time=%.3f base_pos=(%.3f,%.3f,%.3f) quat_w=%.3f pkts=%lld"),
+			RawState.SimTime,
+			RawState.Qpos[0], RawState.Qpos[1], RawState.Qpos[2], RawState.Qpos[3],
+			UdpRenderReceiver->TotalMuJoCoRawParsed);
 	}
 }
+
+

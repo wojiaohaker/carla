@@ -100,5 +100,30 @@ bool CarlaTransformPublisher::Write(
   return true;
 }
 
+bool CarlaTransformPublisher::WriteRaw(
+    std::int32_t seconds,
+    std::uint32_t nanoseconds,
+    const std::string &parent_frame_id,
+    const std::string &child_frame_id,
+    double tx, double ty, double tz,
+    double qw, double qx, double qy, double qz) {
+  geometry_msgs::msg::TransformStamped ts;
+  ts.header().stamp().sec(seconds);
+  ts.header().stamp().nanosec(nanoseconds);
+  ts.header().frame_id(parent_frame_id);
+  ts.child_frame_id(child_frame_id);
+
+  ts.transform().translation().x(tx);
+  ts.transform().translation().y(ty);
+  ts.transform().translation().z(tz);
+  ts.transform().rotation().w(qw);
+  ts.transform().rotation().x(qx);
+  ts.transform().rotation().y(qy);
+  ts.transform().rotation().z(qz);
+
+  _impl->GetMessage()->transforms({ts});
+  return true;
+}
+
 }  // namespace ros2
 }  // namespace carla

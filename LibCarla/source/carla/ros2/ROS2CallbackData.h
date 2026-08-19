@@ -38,7 +38,17 @@ namespace ros2 {
     const char* message;
   };
 
-  using ROS2CallbackData = std::variant<VehicleControl, AckermannControl>;
+  // Velocity command parsed from geometry_msgs/msg/Twist on /cmd_vel
+  // (robot dog). Linear velocities in m/s (x forward, y left), angular.z
+  // in rad/s (counter-clockwise positive) — ROS convention.
+  struct TwistControl
+  {
+    float vx;
+    float vy;
+    float wz;
+  };
+
+  using ROS2CallbackData = std::variant<VehicleControl, AckermannControl, TwistControl>;
   using ROS2MessageCallbackData = std::variant<MessageControl>;
 
   using ActorCallback = std::function<void(void *actor, ROS2CallbackData data)>;

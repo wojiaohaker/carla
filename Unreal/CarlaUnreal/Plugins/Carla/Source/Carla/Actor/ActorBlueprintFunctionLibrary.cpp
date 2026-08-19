@@ -1599,9 +1599,34 @@ void UActorBlueprintFunctionLibrary::MakeBlueprintDefinition(
   FillIdAndTags(Definition, TEXT("blueprint"), Parameters.Name);
   AddRecommendedValuesForActorRoleName(Definition, {TEXT("blueprint")});
 
-  // Definition.Attributes.Emplace(FActorAttribute{
-  //   EActorAttributeType::String,
-  //   Parameters.ObjectType});
+  // Resolve the generated UClass from the asset path so the blueprint
+  // factory can SpawnActor directly; blueprint classes need the "_C"
+  // suffix on the path.
+  if (!Parameters.Path.IsEmpty())
+  {
+    FString ClassPath = Parameters.Path;
+    if (!ClassPath.EndsWith(TEXT("_C")))
+    {
+      ClassPath += TEXT("_C");
+    }
+    Definition.Class = LoadClass<AActor>(nullptr, *ClassPath);
+    if (!Definition.Class)
+    {
+      UE_LOG(LogCarla, Warning,
+          TEXT("MakeBlueprintDefinition: failed to load class '%s'"), *ClassPath);
+    }
+  }
+
+  // The robot dog exposes a fixed ros_name that doubles as its TF frame
+  // ("base_link"); it also lets the ROS 2 attach path build the parent
+  // chain for sensors mounted on the dog.
+  if (Parameters.Name == TEXT("robot_dog"))
+  {
+    Definition.Attributes.Emplace(FActorAttribute{
+        TEXT("ros_name"),
+        EActorAttributeType::String,
+        TEXT("base_link")});
+  }
 
   Success = CheckActorDefinition(Definition);
 }

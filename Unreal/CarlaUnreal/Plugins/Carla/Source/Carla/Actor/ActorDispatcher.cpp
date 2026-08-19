@@ -19,6 +19,7 @@
   #include "carla/ros2/ROS2.h"
   #include <util/enable-ue4-macros.h>
   #include <variant>
+  #include "Carla/RobotDog/RobotDogROS2Component.h"
 #endif
 #include <util/ue-header-guard-end.h>
 
@@ -253,6 +254,22 @@ FCarlaActor* UActorDispatcher::RegisterActor(
           std::visit(Handler, Data);
         });
         #endif
+      }
+      // Robot dog (Nav2 migration): blueprint.robot_dog maps to the
+      // BP_ThirdPersonCharacter character via BlueprintParameters.json.
+      // The component integrates /cmd_vel into the actor pose and drives
+      // the /odom + TF publication through ROS2::PublishRobotDogOdometry.
+      else if (Description.Id == TEXT("blueprint.robot_dog"))
+      {
+        URobotDogROS2Component *RobotDogComponent =
+            NewObject<URobotDogROS2Component>(&Actor);
+        RobotDogComponent->RegisterComponent();
+        ROS2->RegisterRobotDog(static_cast<void*>(&Actor), [ResolvedRosName](void *Actor, carla::ros2::ROS2CallbackData Data) -> void
+        {
+          AActor *UEActor = reinterpret_cast<AActor *>(Actor);
+          ActorROS2Handler Handler(UEActor, ResolvedRosName);
+          std::visit(Handler, Data);
+        });
       }
     }
     #endif

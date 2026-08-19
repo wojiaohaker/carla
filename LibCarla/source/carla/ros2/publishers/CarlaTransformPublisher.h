@@ -50,6 +50,18 @@ public:
       float tx, float ty, float tz,
       float pitch_deg, float yaw_deg, float roll_deg);
 
+  // Stages a TransformStamped built from an already ROS-handed translation
+  // and quaternion — used by the robot dog odometry path, which integrates
+  // its pose directly in the ROS frame and therefore must bypass the
+  // CARLA-to-ROS conversion applied by Write().
+  bool WriteRaw(
+      std::int32_t seconds,
+      std::uint32_t nanoseconds,
+      const std::string &parent_frame_id,
+      const std::string &child_frame_id,
+      double tx, double ty, double tz,
+      double qw, double qx, double qy, double qz);
+
   // Cache the last (input, output) pair per child_frame_id so a static
   // sensor doesn't pay the quaternion conversion on every tick. Public so
   // the equality helper in the .cpp can pattern-match.

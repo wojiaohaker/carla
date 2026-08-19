@@ -19,6 +19,7 @@ class ActorROS2Handler
 
         void operator()(carla::ros2::VehicleControl &Source);
         void operator()(carla::ros2::AckermannControl &Source);
+        void operator()(carla::ros2::TwistControl &Source);
         void operator()(carla::ros2::MessageControl Message);
 
     private:

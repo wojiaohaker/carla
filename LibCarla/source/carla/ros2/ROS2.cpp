@@ -32,6 +32,7 @@
 #include "publishers/CarlaIMUPublisher.h"
 #include "publishers/CarlaGNSSPublisher.h"
 #include "publishers/CarlaTransformPublisher.h"
+#include "publishers/CarlaOdometryPublisher.h"
 #include "publishers/CarlaCollisionPublisher.h"
 #include "publishers/CarlaVehicleDataPublishers.h"
 #include "publishers/BasicPublisher.h"
@@ -40,6 +41,7 @@
 #include "subscribers/BaseSubscriber.h"
 #include "subscribers/CarlaEgoVehicleControlSubscriber.h"
 #include "subscribers/CarlaSubscriber.h"
+#include "subscribers/CmdVelSubscriber.h"
 #if defined(WITH_ROS2_DEMO)
   #include "subscribers/BasicSubscriber.h"
 #endif
@@ -191,9 +193,98 @@ void ROS2::RegisterVehicle(
 }
 
 void ROS2::UnregisterVehicle(void *actor) {
+  // Robot dog cleanup: the odom / TF publishers are singletons bound to the
+  // registered dog, so drop them when that actor goes away.
+  if (actor == _robot_dog_actor) {
+    _robot_dog_actor = nullptr;
+    _robot_dog_odom_publisher.reset();
+    _robot_dog_tf_publisher.reset();
+  }
   _subscribers.erase(actor);
   _actor_callbacks.erase(actor);
   UnregisterSensor(actor);
+}
+
+void ROS2::RegisterRobotDog(void *actor, ActorCallback callback) {
+  // The dog's ros_name doubles as its TF frame: "base_link", so sensors
+  // attached to it broadcast against base_link and the odom publisher
+  // emits odom -> base_link. insert_or_assign overrides the generic
+  // RegisterSensor entry created by the plugin at spawn time.
+  _registrations.insert_or_assign(
+      actor, ActorRegistration{"base_link", "base_link", true, false, true});
+
+  _subscribers.erase(actor);
+  _actor_callbacks.insert_or_assign(actor, std::move(callback));
+  // Fixed topic name to match the Nav2 stack: /cmd_vel.
+  _subscribers.insert(
+      {actor, std::make_shared<CmdVelSubscriber>(actor, "rt/cmd_vel", "base_link")});
+
+  _robot_dog_actor = actor;
+  _robot_dog_odom_publisher =
+      std::make_shared<CarlaOdometryPublisher>("rt/odom", "odom");
+  _robot_dog_tf_publisher = std::make_shared<CarlaTransformPublisher>();
+  log_info("ROS2: robot dog registered; subscribed to rt/cmd_vel, publishing rt/odom + rt/tf");
+}
+
+void ROS2::PublishRobotDogOdometry(
+    double x, double y, double z,
+    double yaw_rad,
+    double vx, double vy, double wz) {
+  if (!_robot_dog_odom_publisher) {
+    return;
+  }
+  const double qw = std::cos(yaw_rad * 0.5);
+  const double qz = std::sin(yaw_rad * 0.5);
+
+  _robot_dog_odom_publisher->Write(
+      _seconds, _nanoseconds, "base_link",
+      x, y, z,
+      qw, 0.0, 0.0, qz,
+      vx, vy, 0.0,
+      0.0, 0.0, wz);
+  _robot_dog_odom_publisher->Publish();
+
+  if (!_robot_dog_tf_publisher) {
+    return;
+  }
+  // Dynamic TF: odom -> base_link.
+  _robot_dog_tf_publisher->WriteRaw(
+      _seconds, _nanoseconds, "odom", "base_link",
+      x, y, z, qw, 0.0, 0.0, qz);
+  _robot_dog_tf_publisher->Publish();
+  // Static TF: base_link -> laser_up. Matches laser_up_joint in the
+  // original robot description: xyz="0 0 0.15", rpy="0 0 0". Broadcast
+  // every cycle on /tf so listeners joining late still pick it up.
+  _robot_dog_tf_publisher->WriteRaw(
+      _seconds, _nanoseconds, "base_link", "laser_up",
+      0.0, 0.0, 0.15, 1.0, 0.0, 0.0, 0.0);
+  _robot_dog_tf_publisher->Publish();
+}
+
+void ROS2::RedirectToRobotDogTopicsIfNeeded(void *actor) {
+  auto it = _actor_parents.find(actor);
+  if (it == _actor_parents.end()) {
+    return;
+  }
+  for (void *parent : it->second) {
+    auto reg_it = _registrations.find(parent);
+    if (reg_it == _registrations.end() || !reg_it->second.is_robot_dog) {
+      continue;
+    }
+    auto actor_it = _registrations.find(actor);
+    if (actor_it == _registrations.end() || actor_it->second.absolute_topic) {
+      return;
+    }
+    // Lidar on the dog publishes to /scan/points in the laser_up frame;
+    // its own TF is suppressed because the dog broadcasts the static
+    // base_link -> laser_up transform instead.
+    actor_it->second.ros_name = "scan/points";
+    actor_it->second.frame_id = "laser_up";
+    actor_it->second.absolute_topic = true;
+    actor_it->second.publish_tf = false;
+    log_info("ROS2: lidar redirected to rt/scan/points (frame laser_up)");
+    return;
+  }
 }
 
 void ROS2::AddActorParentRosName(void *actor, void *parent) {
@@ -255,7 +346,16 @@ std::string ROS2::BuildParentChain(void *actor) const {
 }
 
 std::string ROS2::BuildBaseTopicName(void *actor) const {
-  const std::string ros_name = LookupRosName(actor);
+  auto it = _registrations.find(actor);
+  if (it == _registrations.end()) {
+    return std::string{};
+  }
+  // Robot dog actors publish on fixed ROS topic names (rt/odom,
+  // rt/scan/points, ...) without the carla namespace hierarchy.
+  if (it->second.absolute_topic) {
+    return "rt/" + it->second.ros_name;
+  }
+  const std::string ros_name = it->second.ros_name;
   if (ros_name.empty()) {
     return std::string{};
   }
@@ -376,6 +476,9 @@ std::shared_ptr<BasePublisher> ROS2::GetOrCreateSensor(
       // Both ray-cast and HSS lidars dispatch here; resolve either placeholder.
       resolve("ray_cast");
       resolve("hss_lidar");
+      // A lidar attached to the robot dog publishes on the fixed
+      // /scan/points topic consumed by Nav2 / Cartographer.
+      RedirectToRobotDogTopicsIfNeeded(actor);
       publisher = std::make_shared<CarlaLidarPublisher>(
           BuildBaseTopicName(actor), LookupFrameId(actor));
       break;
@@ -794,6 +897,9 @@ void ROS2::Shutdown() {
   _registrations.clear();
   _actor_parents.clear();
   _vehicle_data_publishers.clear();
+  _robot_dog_actor = nullptr;
+  _robot_dog_odom_publisher.reset();
+  _robot_dog_tf_publisher.reset();
   _clock_publisher.reset();
   _enabled = false;
 #if defined(WITH_ROS2_DEMO)

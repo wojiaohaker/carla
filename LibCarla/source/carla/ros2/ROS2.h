@@ -46,6 +46,7 @@ class BaseSubscriber;
 class CarlaCameraPublisher;
 class CarlaClockPublisher;
 class CarlaTransformPublisher;
+class CarlaOdometryPublisher;
 class CarlaInsDataPublisher;
 class CarlaVehicleStatePublisher;
 class CarlaObstacleListPublisher;
@@ -85,6 +86,17 @@ public:
       void *actor, std::string ros_name, std::string frame_id, ActorCallback callback,
       bool enable_ackermann_control = false);
   void UnregisterVehicle(void *actor);
+
+  // Robot dog (Nav2 migration) API: the actor subscribes to the global
+  // /cmd_vel topic, moves kinematically on the UE side, and gets /odom
+  // plus odom->base_link / base_link->laser_up TF published through
+  // PublishRobotDogOdometry(). A lidar attached to a registered robot dog
+  // is redirected to the fixed /scan/points topic with frame_id laser_up.
+  void RegisterRobotDog(void *actor, ActorCallback callback);
+  void PublishRobotDogOdometry(
+      double x, double y, double z,
+      double yaw_rad,
+      double vx, double vy, double wz);
 
   // Topic-hierarchy seam used by the plugin's attach_actor path: tells ROS2
   // that `actor` should publish under `parent`'s ros_name prefix. Walking
@@ -193,7 +205,17 @@ private:
     std::string ros_name;
     std::string frame_id;
     bool publish_tf{true};
+    // ros_name is used as-is under "rt/" instead of the
+    // "rt/carla/[parent/]<ros_name>" hierarchy (robot dog topics).
+    bool absolute_topic{false};
+    bool is_robot_dog{false};
   };
+
+  // Walks the actor's parent chain; if any ancestor is a registered robot
+  // dog, rewrites the actor's registration so its data flows to the fixed
+  // robot dog topics (lidar -> rt/scan/points, frame laser_up) and its own
+  // TF stays disabled (the robot dog publishes the static TF instead).
+  void RedirectToRobotDogTopicsIfNeeded(void *actor);
 
   // Resolves an actor's `rt/carla/[parent/]ros_name` base topic by walking the
   // parent chain. Returns empty if the actor is not registered.
@@ -259,6 +281,11 @@ private:
   std::shared_ptr<BasicPublisher> _basic_publisher;
   std::unordered_map<void *, ActorMessageCallback> _actor_message_callbacks;
 #endif
+
+  // Robot dog: single instance of each (one dog per world today).
+  void *_robot_dog_actor{nullptr};
+  std::shared_ptr<CarlaOdometryPublisher> _robot_dog_odom_publisher;
+  std::shared_ptr<CarlaTransformPublisher> _robot_dog_tf_publisher;
 };
 
 }  // namespace ros2

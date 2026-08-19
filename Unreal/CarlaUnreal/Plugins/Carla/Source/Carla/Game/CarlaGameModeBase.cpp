@@ -6,6 +6,7 @@
 
 #include "Carla/Game/CarlaGameModeBase.h"
 #include "Carla.h"
+#include "Carla/Actor/Factory/BlueprintActorFactory.h"
 #include "Carla/Game/Tagger.h"
 #include "Carla/Game/CarlaHUD.h"
 #include "Carla/Game/CarlaStatics.h"
@@ -415,6 +416,11 @@ void ACarlaGameModeBase::SpawnActorFactories()
 {
   auto *World = GetWorld();
   check(World != nullptr);
+
+  // Blueprint-driven actors (e.g. blueprint.robot_dog) are registered from
+  // Carla/Config/BlueprintParameters.json; make sure the factory is always
+  // present regardless of the game-mode blueprint configuration.
+  ActorFactories.Add(ABlueprintActorFactory::StaticClass());
 
   for (auto &FactoryClass : ActorFactories)
   {

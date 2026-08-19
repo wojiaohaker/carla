@@ -5,9 +5,12 @@
 // For a copy, see <https://opensource.org/licenses/MIT>.
 
 #include "ActorROS2Handler.h"
+#include "Carla/RobotDog/RobotDogROS2Component.h"
 #include "Carla/Vehicle/CarlaWheeledVehicle.h"
 #include "Carla/Vehicle/VehicleAckermannControl.h"
 #include "Carla/Vehicle/VehicleControl.h"
+
+#include "Components/ActorComponent.h"
 
 void ActorROS2Handler::operator()(carla::ros2::VehicleControl &Source)
 {
@@ -44,6 +47,19 @@ void ActorROS2Handler::operator()(carla::ros2::AckermannControl &Source)
   NewControl.Jerk = Source.jerk;
 
   Vehicle->ApplyVehicleAckermannControl(NewControl, EVehicleInputPriority::User);
+}
+
+void ActorROS2Handler::operator()(carla::ros2::TwistControl &Source)
+{
+  if (!_Actor) return;
+
+  // Robot dog path: forward the /cmd_vel twist to the movement component,
+  // which integrates the pose and publishes /odom + TF.
+  URobotDogROS2Component *RobotDog =
+      _Actor->FindComponentByClass<URobotDogROS2Component>();
+  if (!RobotDog) return;
+
+  RobotDog->ApplyTwist(Source.vx, Source.vy, Source.wz);
 }
 
 void ActorROS2Handler::operator()(carla::ros2::MessageControl Message)

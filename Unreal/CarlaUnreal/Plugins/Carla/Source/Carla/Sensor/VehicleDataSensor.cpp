@@ -367,8 +367,7 @@ void AVehicleDataSensor::CollectObstacleListData(
     AActor *Actor = CarlaActor->GetActor();
     FVector ActorLoc = Actor ? Actor->GetActorLocation() : FVector::ZeroVector;
 
-    UE_LOG(LogTemp, Log, TEXT("  [Registry] Id=%d, Type=%d, DescId=%s, role_name=%s, Loc=(%.0f,%.0f,%.0f)"),
-        Pair.Key, (int32)ActorType, *DescId, *RoleNameVal, ActorLoc.X, ActorLoc.Y, ActorLoc.Z);
+    //UE_LOG(LogTemp, Log, TEXT("  [Registry] Id=%d, Type=%d, DescId=%s, role_name=%s, Loc=(%.0f,%.0f,%.0f)"), Pair.Key, (int32)ActorType, *DescId, *RoleNameVal, ActorLoc.X, ActorLoc.Y, ActorLoc.Z);
 
     if (ObstacleId >= MaxObstacles)
     {

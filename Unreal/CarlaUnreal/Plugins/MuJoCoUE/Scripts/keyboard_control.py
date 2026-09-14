@@ -25,14 +25,19 @@ import sys
 import struct
 import time
 import fcntl
+import select
+import termios
+import tty
+import argparse
 import threading
 import socket
 
+# keyboard 库仅在 --input keyboard 模式需要（读 /dev/input，本地物理键盘）。
+# terminal 模式（SSH 远程）不依赖它，故导入失败不致命。
 try:
     import keyboard
 except ImportError:
-    print("需要安装 keyboard 库: sudo pip3 install keyboard")
-    sys.exit(1)
+    keyboard = None
 
 # ============ Linux input 常量 ============
 # Event types
@@ -252,10 +257,124 @@ class LcmVelocityPublisher:
         self.sock.close()
 
 
+class KeyboardLibSource:
+    """输入源 A: keyboard 库 —— 读 /dev/input/event*（本地物理键盘，需 sudo）。
+    SSH 远程时按键走 pts、不进 /dev/input，本源抓不到，请改用 terminal 源。"""
+
+    def __init__(self):
+        if keyboard is None:
+            raise RuntimeError(
+                "keyboard 库未安装（sudo pip3 install keyboard）。"
+                "SSH 远程无需它，请改用 --input terminal。")
+
+    def start(self):
+        pass  # keyboard 库无需显式启动
+
+    def is_pressed(self, key):
+        return keyboard.is_pressed(key)
+
+    def on_press_key(self, key, callback):
+        keyboard.on_press_key(key, callback)
+
+    def stop(self):
+        keyboard.unhook_all()
+
+
+class TerminalKeySource:
+    """输入源 B: 从终端 stdin 以 cbreak 模式读按键 —— SSH 远程可用，不依赖
+    keyboard 库 / /dev/input。终端只有"按下"没有"抬起"，靠客户端 auto-repeat 维持：
+      is_pressed(k): 最近 HOLD_TIMEOUT 内收到过 k 即视为按住（松开后自动归零）
+      on_press_key(k, cb): 边沿触发，用 EDGE_COOLDOWN 抑制 auto-repeat 的重复调用
+    """
+
+    HOLD_TIMEOUT = 0.25   # [s] 按住判定窗口，需 > 客户端 repeat 间隔(~30ms)
+    EDGE_COOLDOWN = 0.8   # [s] u/space 单次触发冷却，需 > repeat 初始延迟(~0.5s)
+
+    def __init__(self):
+        if not sys.stdin.isatty():
+            raise RuntimeError("terminal 输入源需要 stdin 是交互式终端(tty)。")
+        self.fd = sys.stdin.fileno()
+        self._old_attr = None
+        self._last_press = {}   # key -> 最近收到时刻
+        self._last_edge = {}    # key -> 最近触发回调时刻
+        self._edge_cb = {}      # key -> callback
+        self._lock = threading.Lock()
+        self._running = False
+        self._thread = None
+
+    def start(self):
+        self._old_attr = termios.tcgetattr(self.fd)
+        tty.setcbreak(self.fd)
+        self._running = True
+        self._thread = threading.Thread(target=self._read_loop, daemon=True)
+        self._thread.start()
+
+    def _read_loop(self):
+        while self._running:
+            try:
+                r, _, _ = select.select([self.fd], [], [], 0.05)
+                if not r:
+                    continue
+                data = os.read(self.fd, 64)
+            except (OSError, ValueError):
+                break
+            if data:
+                self._feed(data)
+
+    def _feed(self, data):
+        now = time.time()
+        i, n = 0, len(data)
+        while i < n:
+            b = data[i]
+            if b == 0x1b:  # ESC 或转义序列(方向键等)
+                if i + 2 < n and data[i + 1] == 0x5b:  # ESC [ X，忽略
+                    i += 3
+                    continue
+                key = 'esc'
+            else:
+                ch = chr(b)
+                key = 'space' if ch == ' ' else ch.lower()
+            i += 1
+
+            fire = None
+            with self._lock:
+                self._last_press[key] = now
+                cb = self._edge_cb.get(key)
+                if cb and (now - self._last_edge.get(key, 0.0)) > self.EDGE_COOLDOWN:
+                    self._last_edge[key] = now
+                    fire = cb
+            if fire:
+                try:
+                    fire(None)
+                except Exception as e:
+                    print(f"\n  [terminal] 回调异常: {e}", flush=True)
+
+    def is_pressed(self, key):
+        with self._lock:
+            t = self._last_press.get(key)
+        return t is not None and (time.time() - t) < self.HOLD_TIMEOUT
+
+    def on_press_key(self, key, callback):
+        with self._lock:
+            self._edge_cb[key] = callback
+
+    def stop(self):
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=0.2)
+        if self._old_attr is not None:
+            try:
+                termios.tcsetattr(self.fd, termios.TCSADRAIN, self._old_attr)
+            except Exception:
+                pass
+            self._old_attr = None
+
+
 class KeyboardController:
-    def __init__(self, gamepad, lcm_pub=None):
+    def __init__(self, gamepad, lcm_pub=None, key_source=None):
         self.gamepad = gamepad
         self.lcm_pub = lcm_pub
+        self.key = key_source
         self.vx = 0
         self.vy = 0
         self.yaw_rate = 0
@@ -268,25 +387,25 @@ class KeyboardController:
             old_vx, old_vy, old_yaw = self.vx, self.vy, self.yaw_rate
 
             # W/S → ABS_Y (sim_launcher: W=-32768, S=+32767)
-            if keyboard.is_pressed('w'):
+            if self.key.is_pressed('w'):
                 self.vx = -32768
-            elif keyboard.is_pressed('s'):
+            elif self.key.is_pressed('s'):
                 self.vx = 32767
             else:
                 self.vx = 0
 
             # A/D → ABS_X (sim_launcher: A=-32768, D=+32767)
-            if keyboard.is_pressed('a'):
+            if self.key.is_pressed('a'):
                 self.vy = -32768
-            elif keyboard.is_pressed('d'):
+            elif self.key.is_pressed('d'):
                 self.vy = 32767
             else:
                 self.vy = 0
 
             # Q/E → ABS_RX + ABS_Z (sim_launcher: Q=-32768, E=+32767)
-            if keyboard.is_pressed('q'):
+            if self.key.is_pressed('q'):
                 self.yaw_rate = -32768
-            elif keyboard.is_pressed('e'):
+            elif self.key.is_pressed('e'):
                 self.yaw_rate = 32767
             else:
                 self.yaw_rate = 0
@@ -325,10 +444,39 @@ class KeyboardController:
             return f"  L=({vy_norm:+.2f},{vx_norm:+.2f}) R_x={yaw_norm:+.2f}"
 
 
+def parse_args():
+    p = argparse.ArgumentParser(
+        description="Matrix mc_ctrl 键盘遥控 (虚拟 Logitech F710)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "输入源 (--input):\n"
+            "  keyboard  读 /dev/input/event*（本地物理键盘，keyboard 库）。默认。\n"
+            "  terminal  从终端 stdin 读按键（SSH 远程可用，无需 keyboard 库）。\n"
+            "示例:\n"
+            "  本地:  sudo python3 keyboard_control.py\n"
+            "  远程:  sudo python3 keyboard_control.py --input terminal\n"
+            "(两种模式都需 sudo 以创建 /dev/uinput 虚拟手柄)"))
+    p.add_argument('--input', '-i', choices=['keyboard', 'terminal'],
+                   default='keyboard', help="按键捕获来源 (默认: keyboard)")
+    return p.parse_args()
+
+
 def main():
+    args = parse_args()
+
     print("=" * 55)
     print("  Matrix mc_ctrl 键盘遥控 (虚拟 Logitech F710)")
+    tag = "SSH 远程/终端 stdin" if args.input == 'terminal' else "本地物理键盘/keyboard 库"
+    print(f"  输入源: {args.input}  ({tag})")
     print("=" * 55)
+
+    # 创建输入源（按键捕获层：keyboard 库 or 终端 stdin）
+    try:
+        key_source = (TerminalKeySource() if args.input == 'terminal'
+                      else KeyboardLibSource())
+    except Exception as e:
+        print(f"  初始化输入源失败: {e}")
+        sys.exit(1)
 
     # 创建虚拟手柄
     try:
@@ -351,7 +499,7 @@ def main():
     # 创建 LCM 速度发布器
     lcm_pub = LcmVelocityPublisher()
 
-    ctrl = KeyboardController(gamepad, lcm_pub)
+    ctrl = KeyboardController(gamepad, lcm_pub, key_source)
 
     # 按键回调 (与 sim_launcher KeyListener 完全一致)
     def on_stand():
@@ -364,8 +512,10 @@ def main():
         gamepad.tap_combo(BTN_TR, BTN_TL)
         print("\n  → 趴下! (RB+LB)")
 
-    keyboard.on_press_key('u', lambda _: on_stand())
-    keyboard.on_press_key('space', lambda _: on_lie_down())
+    key_source.on_press_key('u', lambda _: on_stand())
+    key_source.on_press_key('space', lambda _: on_lie_down())
+    # 注册回调后再启动输入源（terminal 源此时才切 cbreak，避免此前输入丢失）
+    key_source.start()
 
     period = 1.0 / SEND_RATE_HZ
     packet_count = 0
@@ -375,7 +525,7 @@ def main():
 
     try:
         while ctrl.running:
-            if keyboard.is_pressed('esc'):
+            if key_source.is_pressed('esc'):
                 break
 
             ctrl.update()
@@ -394,6 +544,8 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        # 先恢复终端/解除键盘 hook（异常退出时也要让终端恢复正常）
+        key_source.stop()
         # 归零摇杆
         gamepad.set_left_stick(0, 0)
         gamepad.set_right_stick_x(0)
@@ -404,7 +556,6 @@ def main():
             lcm_pub.close()
         time.sleep(0.1)
         gamepad.destroy()
-        keyboard.unhook_all()
         print("\n\n  已停止，虚拟手柄已销毁。")
 
 
